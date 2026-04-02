@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>LLamaSharp.Backend.Vulkan.Windows</id>
+    <version>0.26.0</version>
+    <title>LLamaSharp.Backend.Vulkan.Windows</title>
+    <authors>llama.cpp Authors</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon512.png</icon>
+    <projectUrl>https://github.com/SciSharp/LLamaSharp</projectUrl>
+    <description>LLamaSharp.Backend.Vulkan.Windows contains the Windows binaries for LLamaSharp with Vulkan support.</description>
+    <releaseNotes></releaseNotes>
+    <copyright>Copyright 2023 The llama.cpp Authors. All rights reserved.</copyright>
+    <tags>LLamaSharp LLama LLM GPT AI ChatBot SciSharp</tags>
+    <dependencies>
+      <dependency id="LLamaSharp.Backend.Cpu" version="0.26.0" />
+    </dependencies>
+  </metadata>
+</package>
