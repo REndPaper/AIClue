@@ -27,14 +27,15 @@ public class CoreSystemManager : MonoBehaviour
     {
         // 게임 시작 시 초기 로딩 큐 실행 (Splash 씬에서 시작됨)
         //_ = ProcessLoadingQueueAsync();
+        ChangeState(GameState.Splash);
     }
 
     private void InitializeStates()
     {
         _stateDictionary = new Dictionary<GameState, IGameState>
         {
-            // { GameState.MainMenu, new MainMenuState() },
-            // { GameState.MainPlay, new MainPlayState() }
+            { GameState.Splash, new SplashState() },
+            { GameState.MainMenu, new MainMenuState() }
             // 팀장님이 만드실 상태 객체들을 여기에 매핑합니다.
         };
     }

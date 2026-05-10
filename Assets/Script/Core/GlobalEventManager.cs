@@ -9,10 +9,19 @@ public enum GameEventType
     SceneLoadProgress,
     SceneLoadComplete,
 
+    ShowMainMenuUI,
+    HideMainMenuUI,
+    ShowScenarioSelectUI,
+    HideScenarioSelectUI,
+
     ClueObtained,       // 데이터: 획득한 단서 객체(ClueData)
     AnswerSubmitted,    // 데이터: 제출된 정답 데이터
 
-    OnAIResponded,     // 데이터: AI가 반환한 텍스트(string)
+    PlayerSpeaks,       // 플레이어가 채팅을 입력했을 때 (UI -> AI)
+    AIThinkingStart,   // AI가 추론을 시작할 때 (AI -> UI, 버튼 잠금용)
+    AIResponded,        // AI가 대답을 완료했을 때 (AI -> UI)
+    AIError,             // 추론 중 에러 발생 시 (AI -> UI)
+
     UpdateUIScore,      // 데이터: 현재 점수(int)
 
     ShowLoadingScreen,
