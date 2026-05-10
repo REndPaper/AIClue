@@ -35,7 +35,8 @@ public class CoreSystemManager : MonoBehaviour
         _stateDictionary = new Dictionary<GameState, IGameState>
         {
             { GameState.Splash, new SplashState() },
-            { GameState.MainMenu, new MainMenuState() }
+            { GameState.MainMenu, new MainMenuState() },
+            { GameState.ScenarioSelect, new ScenarioSelectState() }
             // 팀장님이 만드실 상태 객체들을 여기에 매핑합니다.
         };
     }
