@@ -8,6 +8,11 @@ public class UIFlowManager : MonoBehaviour
     public GameObject titlePanel;
     public GameObject briefingPanel;
     public GameObject resultPanel;
+    public GameObject mainPlayPanel;
+
+    [Header("Main Play HUD Panels")]
+    public GameObject chatPanel;
+    public GameObject clueInventoryPanel;
 
     [Header("Common Popups")]
     public GameObject settingPopup;
@@ -23,6 +28,7 @@ public class UIFlowManager : MonoBehaviour
     private void Start()
     {
         CloseAllPopups();
+        CloseHudPanels();
         ShowSplash();
         StartCoroutine(SplashToTitle());
     }
@@ -47,6 +53,7 @@ public class UIFlowManager : MonoBehaviour
         SetActiveSafe(titlePanel, false);
         SetActiveSafe(briefingPanel, false);
         SetActiveSafe(resultPanel, false);
+        SetActiveSafe(mainPlayPanel, false);
     }
 
     public void CloseAllPopups()
@@ -59,10 +66,17 @@ public class UIFlowManager : MonoBehaviour
         SetActiveSafe(saveFailPopup, false);
     }
 
+    public void CloseHudPanels()
+    {
+        SetActiveSafe(chatPanel, false);
+        SetActiveSafe(clueInventoryPanel, false);
+    }
+
     public void ShowSplash()
     {
         HideAllMainPanels();
         CloseAllPopups();
+        CloseHudPanels();
         SetActiveSafe(splashPanel, true);
     }
 
@@ -70,6 +84,7 @@ public class UIFlowManager : MonoBehaviour
     {
         HideAllMainPanels();
         CloseAllPopups();
+        CloseHudPanels();
         SetActiveSafe(titlePanel, true);
     }
 
@@ -77,6 +92,7 @@ public class UIFlowManager : MonoBehaviour
     {
         HideAllMainPanels();
         CloseAllPopups();
+        CloseHudPanels();
         SetActiveSafe(briefingPanel, true);
     }
 
@@ -84,7 +100,40 @@ public class UIFlowManager : MonoBehaviour
     {
         HideAllMainPanels();
         CloseAllPopups();
+        CloseHudPanels();
         SetActiveSafe(resultPanel, true);
+    }
+
+    public void GoToMainPlay()
+    {
+        HideAllMainPanels();
+        CloseAllPopups();
+        CloseHudPanels();
+
+        SetActiveSafe(mainPlayPanel, true);
+        Debug.Log("메인 플레이 화면으로 이동");
+    }
+
+    public void OpenChatPanel()
+    {
+        SetActiveSafe(clueInventoryPanel, false);
+        SetActiveSafe(chatPanel, true);
+    }
+
+    public void CloseChatPanel()
+    {
+        SetActiveSafe(chatPanel, false);
+    }
+
+    public void OpenClueInventoryPanel()
+    {
+        SetActiveSafe(chatPanel, false);
+        SetActiveSafe(clueInventoryPanel, true);
+    }
+
+    public void CloseClueInventoryPanel()
+    {
+        SetActiveSafe(clueInventoryPanel, false);
     }
 
     public void OpenSettingPopup()
@@ -146,20 +195,15 @@ public class UIFlowManager : MonoBehaviour
         ClosePopup();
     }
 
-    public void GoToMainPlay()
-    {
-        Debug.Log("메인 플레이 화면으로 이동 예정");
-
-        // 나중에 실제 메인 플레이 씬이 생기면 여기서 씬 전환 코드 넣기
-     
-    }
-
     public void OpenStatistics()
     {
         Debug.Log("통계 화면 열기");
-
-        // 통계 화면이 아직 없으면 임시로 결과 화면
         ShowResult();
+    }
+
+    public void SelectRoom(string roomName)
+    {
+        Debug.Log(roomName + " 선택됨");
     }
 
     public void QuitGame()
