@@ -2,7 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 팀장님의 취향을 반영하여 이벤트 이름은 직관적인 스네이크 케이스로 유지했습니다.
+// 플레이어가 말할 때 전달할 데이터 꾸러미
+public class PlayerSpeakData
+{
+    public string question;         // 유저가 친 질문
+    public string evidenceContext;  // 현재 보유한 단서 리스트
+}
+
 public enum GameEventType
 {
     SceneLoadStart,
@@ -13,6 +19,18 @@ public enum GameEventType
     HideMainMenuUI,
     ShowScenarioSelectUI,
     HideScenarioSelectUI,
+
+    InitMainPlayUI,
+    ShowMainPlayUI,
+    TargetChanged,
+    EvidenceFound,
+    HideMainPlayUI,
+
+    ShowAnswerSubmitUI,
+    HideAnswerSubmitUI,
+
+    ShowResultUI,
+    HideResultUI,
 
     ClueObtained,       // 데이터: 획득한 단서 객체(ClueData)
     AnswerSubmitted,    // 데이터: 제출된 정답 데이터

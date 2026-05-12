@@ -36,7 +36,10 @@ public class CoreSystemManager : MonoBehaviour
         {
             { GameState.Splash, new SplashState() },
             { GameState.MainMenu, new MainMenuState() },
-            { GameState.ScenarioSelect, new ScenarioSelectState() }
+            { GameState.ScenarioSelect, new ScenarioSelectState() },
+            { GameState.MainPlay, new MainPlayState() },
+            { GameState.AnswerSubmit, new AnswerSubmitState() },
+            { GameState.Result, new ResultState() }
             // 팀장님이 만드실 상태 객체들을 여기에 매핑합니다.
         };
     }
@@ -46,7 +49,7 @@ public class CoreSystemManager : MonoBehaviour
     {
         if (!_stateDictionary.ContainsKey(newState)) return;
 
-        _currentState?.Exit();
+        IGameState oldState = _currentState;
         _currentState = _stateDictionary[newState];
 
         Debug.Log($"[Core] 상태 전환: {newState} (타입: {_currentState.Transition})");
@@ -57,17 +60,25 @@ public class CoreSystemManager : MonoBehaviour
         }
         else if (_currentState.Transition == TransitionType.SceneChange)
         {
-            // ChangeState 내부 SceneChange 로직 보강 예시
-            // 1. 해당 씬 이름 정의 (상태 객체로부터 가져옴)
             string sceneName = (_currentState as ISceneChangeState)?.TargetSceneName;
 
-            // 2. 씬 로딩 태스크 생성 및 큐 실행
-            var sceneTask = new SceneLoadingTask(sceneName);
-            await ProcessLoadingQueueAsync(new List<ILoadingTask> { sceneTask });
-
-            // 3. 씬 로드 완료 후 진입
-            _currentState.Enter();
+            // ★ [추가된 핵심 방어 로직] 
+            // 가려고 하는 씬이 이미 현재 켜져있는 씬과 같다면? -> 씬 로딩 생략하고 UI만 켬!
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == sceneName)
+            {
+                Debug.Log($"[Core] 이미 '{sceneName}' 씬에 있습니다. 로딩을 생략하고 UI만 전환합니다.");
+                _currentState.Enter();
+            }
+            else
+            {
+                // 진짜로 다른 씬으로 넘어갈 때만 로딩 큐 실행
+                var sceneTask = new SceneLoadingTask(sceneName);
+                await ProcessLoadingQueueAsync(new List<ILoadingTask> { sceneTask });
+                _currentState.Enter();
+            }
         }
+
+        oldState?.Exit();
     }
 
     private void Update()

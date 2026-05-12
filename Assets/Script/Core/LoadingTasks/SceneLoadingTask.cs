@@ -26,7 +26,7 @@ public class SceneLoadingTask : ILoadingTask
 
             if (asyncOp.progress >= 0.9f)
             {
-                tcs.SetResult(true);
+                //tcs.SetResult(true);
             }
 
             // 메인 스레드를 점유하지 않도록 아주 잠깐 대기
