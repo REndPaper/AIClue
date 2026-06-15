@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Unity-6000.3.11f1-000000?logo=unity" alt="Unity 6"/>
   <img src="https://img.shields.io/badge/C%23-12.0-239120?logo=csharp" alt="C#"/>
   <img src="https://img.shields.io/badge/LLamaSharp-0.26.0-FF6600" alt="LLamaSharp"/>
-  <img src="https://img.shields.io/badge/Exaone-3.5-7.8B-GGUF-4285F4" alt="Exaone 3.5"/>
+  <img src="https://img.shields.io/badge/Exaone--3.5-7.8B--GGUF-4285F4" alt="Exaone 3.5"/>
   <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version"/>
 </p>
 
