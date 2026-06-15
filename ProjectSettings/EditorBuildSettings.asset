@@ -14,12 +14,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: c3667be74e3ed534ebcde9d5aa58debe
-  - enabled: 0
-    path: Assets/Scenes/AI_Sample.unity
-    guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
     path: Assets/Scenes/Briefing.unity
     guid: d066abf7f2bbe5642a0ae443ff54a2ed
+  - enabled: 1
+    path: Assets/Scenes/Result.unity
+    guid: f16ef894bde6df049beb1c86cd476962
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

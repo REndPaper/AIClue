@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using UnityEngine.UI;
@@ -34,6 +34,26 @@ public class AnswerSubmitController : MonoBehaviour
         // 2. 버튼 클릭 이벤트 연결
         backButton.onClick.AddListener(BackToInvestigation);
         submitButton.onClick.AddListener(GoToResult);
+    }
+
+    private void Start()
+    {
+        // Auto-assign if missing in inspector
+        if (judgmentSystem == null)
+        {
+            judgmentSystem = FindFirstObjectByType<JudgmentSystem>();
+            if (judgmentSystem == null) Debug.LogWarning("[AnswerSubmitController] JudgmentSystem is missing in the scene!");
+        }
+        if (resultController == null)
+        {
+            resultController = FindFirstObjectByType<ResultController>();
+            if (resultController == null) Debug.LogWarning("[AnswerSubmitController] ResultController is missing in the scene!");
+        }
+        if (aiFeedbackHandler == null)
+        {
+            aiFeedbackHandler = FindFirstObjectByType<AIFeedbackHandler>();
+            if (aiFeedbackHandler == null) Debug.LogWarning("[AnswerSubmitController] AIFeedbackHandler is missing in the scene!");
+        }
     }
 
     private void OnDestroy()

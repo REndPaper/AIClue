@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
@@ -79,6 +79,14 @@ public class ResultController : MonoBehaviour
         if (loadingPanel != null) return;
 
         Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas == null && myGroup != null)
+        {
+            canvas = myGroup.GetComponentInParent<Canvas>();
+        }
+        if (canvas == null)
+        {
+            canvas = FindFirstObjectByType<Canvas>();
+        }
         if (canvas == null) return;
 
         // 1. 패널 오브젝트 및 레이아웃 설정
