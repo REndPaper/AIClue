@@ -1,52 +1,320 @@
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System.Collections;
+using System.Collections.Generic;
 
-public class RoomObject : MonoBehaviour
+public class RoomObject : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    [Tooltip("0~8 »çÀÌÀÇ ¹æ ¹øÈ£")]
+    [Tooltip("0~8 ë²ˆ ë°©ì˜ ê³ ìœ  ë²ˆí˜¸")]
     public int roomIndex;
 
     public bool isSearched = false;
 
-    // ¼ÎÀÌ´õÀÇ ÇÁ·ÎÆÛÆ¼ ÀÌ¸§ (ÄÚµå¿¡ ÀÖ´ø ±×´ë·Î!)
-    private readonly int gridColorId = Shader.PropertyToID("_Color");
+    [Header("ì‚¬ìš´ë“œ ì—°ì¶œ (ì„ íƒì‚¬í•­)")]
+    public AudioClip searchSuccessSound;
+    private AudioSource _audioSource;
 
-    private Renderer _meshRenderer;
-    private Material _instancedMaterial;
+    private Image _buttonImage;
+    private Outline _outline;
+    private Coroutine _blinkCoroutine;
+
+    // ë‹ë³´ê¸° ì»¤ì„œ ìºì‹±
+    private static Texture2D _magnifierCursor;
+    private static readonly Vector2 CursorHotspot = new Vector2(10, 22); // ë‹ë³´ê¸° ë Œì¦ˆ ì„¼í„° ë¶€ê·¼
 
     private void Awake()
     {
-        _meshRenderer = GetComponent<Renderer>();
-        if(roomIndex == 4){
-            isSearched = true;
+        _buttonImage = GetComponent<Image>();
+        _audioSource = GetComponent<AudioSource>();
+        if (_audioSource == null)
+        {
+            _audioSource = gameObject.AddComponent<AudioSource>();
         }
 
-        // ¡Ú Áß¿ä: MaterialÀ» º¹Á¦ÇØ¼­ »ç¿ë (¾È ±×·¯¸é ¸ğµç ¹æ »ö±òÀÌ °°ÀÌ º¯ÇÔ)
-        if (_meshRenderer != null)
+        if (roomIndex == 4)
         {
-            _instancedMaterial = _meshRenderer.material;
+            isSearched = true;
         }
     }
 
-    /// <summary>
-    /// ¼ö»ö °á°ú¿¡ µû¶ó ¹æÀÇ ¿ÍÀÌ¾îÇÁ·¹ÀÓ »ö»óÀ» ¹Ù²ß´Ï´Ù.
-    /// </summary>
+    private void Start()
+    {
+        // 1. ë°© ì´ë¦„ í…ìŠ¤íŠ¸ ì„¤ì • (ì‹œë‚˜ë¦¬ì˜¤ ë§¤ë‹ˆì € ë°ì´í„° ì—°ë™)
+        if (ScenarioManager.Instance != null && ScenarioManager.Instance.roomNames != null &&
+            roomIndex >= 0 && roomIndex < ScenarioManager.Instance.roomNames.Length)
+        {
+            string roomName = ScenarioManager.Instance.roomNames[roomIndex];
+            
+            // ì¤‘ì•™ êµ¬ì—­(ì·¨ì¡°ì‹¤) ì˜ˆì™¸ ì²˜ë¦¬
+            if (roomIndex == 4)
+            {
+                SetRoomText(roomName, "ğŸš¨");
+            }
+            else
+            {
+                SetRoomText(roomName, "?");
+            }
+        }
+    }
+
     public void MarkAsSearched(bool foundEvidence)
     {
         isSearched = true;
 
-        if (_instancedMaterial != null)
+        string roomName = "";
+        if (ScenarioManager.Instance != null && ScenarioManager.Instance.roomNames != null &&
+            roomIndex >= 0 && roomIndex < ScenarioManager.Instance.roomNames.Length)
         {
-            // ´Ü¼­¸¦ Ã£¾ÒÀ¸¸é Çü±¤ ÃÊ·Ï»ö, ²ÎÀÌ¸é Ä¢Ä¢ÇÑ È¸»ö/»¡°£»ö µî ¿øÇÏ´Â »öÀ¸·Î!
-            Color targetColor = foundEvidence ? Color.green : Color.gray;
+            roomName = ScenarioManager.Instance.roomNames[roomIndex];
+        }
 
-            // ¼ÎÀÌ´õÀÇ _Color ¼Ó¼º¿¡ »õ·Î¿î »ö»óÀ» µ¤¾î¾º¿ò
-            _instancedMaterial.SetColor(gridColorId, targetColor);
+        Sprite roomSprite = string.IsNullOrEmpty(roomName) ? null : ScenarioManager.Instance.GetRoomSprite(roomName);
+
+        if (_buttonImage != null)
+        {
+            if (roomSprite != null)
+            {
+                _buttonImage.sprite = roomSprite;
+                _buttonImage.color = foundEvidence ? Color.white : new Color(0.5f, 0.5f, 0.5f, 1f);
+            }
+            else
+            {
+                // ë‹¨ì„œë¥¼ ì°¾ì•˜ìœ¼ë©´ ì´ˆë¡ìƒ‰, í—ˆíƒ•ì´ë©´ ì–´ë‘ìš´ íšŒìƒ‰ìœ¼ë¡œ ë°”ê¿‰ë‹ˆë‹¤.
+                Color targetColor = foundEvidence ? new Color(0.2f, 0.8f, 0.2f, 1f) : new Color(0.4f, 0.4f, 0.4f, 1f);
+                _buttonImage.color = targetColor;
+            }
+        }
+
+        // í…ìŠ¤íŠ¸ ì´ëª¨ì§€ ê°±ì‹ 
+        if (!string.IsNullOrEmpty(roomName))
+        {
+            if (roomSprite != null)
+            {
+                SetRoomText(roomName, "");
+            }
+            else
+            {
+                string emoji = GetRoomEmoji(roomName, foundEvidence);
+                SetRoomText(roomName, emoji);
+            }
+        }
+
+        if (foundEvidence)
+        {
+            // ê³¨ë“œ ìŠ¤íŒŒí´ë§ ì´í™íŠ¸ íŠ¸ë¦¬ê±°
+            PlayGoldSparkleEffect();
+
+            // íš¨ê³¼ìŒ ì¬ìƒ
+            if (searchSuccessSound != null && _audioSource != null)
+            {
+                _audioSource.PlayOneShot(searchSuccessSound);
+            }
         }
     }
 
-    private void OnDestroy()
+    private void SetRoomText(string roomName, string iconEmoji)
     {
-        // ¸Ş¸ğ¸® ´©¼ö ¹æÁö (º¹Á¦µÈ ¸ŞÅ×¸®¾ó »èÁ¦)
-        if (_instancedMaterial != null) Destroy(_instancedMaterial);
+        var txt = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+        if (txt != null)
+        {
+            if (string.IsNullOrEmpty(iconEmoji))
+            {
+                txt.text = roomName;
+            }
+            else
+            {
+                txt.text = $"<size=140%>{iconEmoji}</size>\n{roomName}";
+            }
+        }
+    }
+
+    private string GetRoomEmoji(string roomName, bool foundEvidence)
+    {
+        if (!foundEvidence) return "âŒ";
+
+        if (roomName.Contains("ë„ì„œê´€") || roomName.Contains("ì„œì¬")) return "ğŸ“š";
+        if (roomName.Contains("ì£¼ë°©") || roomName.Contains("ë¶€ì—Œ")) return "ğŸ³";
+        if (roomName.Contains("í™”ì¥ì‹¤") || roomName.Contains("ìš•ì‹¤")) return "ğŸš½";
+        if (roomName.Contains("ì¹¨ì‹¤") || roomName.Contains("ë°©")) return "ğŸ›ï¸";
+        if (roomName.Contains("ê±°ì‹¤")) return "ğŸ›‹ï¸";
+        if (roomName.Contains("ë³µë„") || roomName.Contains("ê³„ë‹¨")) return "ğŸš¶";
+        if (roomName.Contains("ì •ì›") || roomName.Contains("ë§ˆë‹¹")) return "ğŸŒ³";
+        if (roomName.Contains("ì°½ê³ ") || roomName.Contains("ì°¨ê³ ")) return "ğŸ“¦";
+        if (roomName.Contains("ì‹ë‹¹") || roomName.Contains("ë‹¤ì´ë‹")) return "ğŸ½ï¸";
+
+        return "ğŸ”";
+    }
+
+    // ë§ˆìš°ìŠ¤ í˜¸ë²„ ì‹œì‘
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (isSearched && roomIndex != 4) return; // ì´ë¯¸ ì¡°ì‚¬í–ˆê±°ë‚˜ ì¤‘ì•™êµ¬ì—­ì€ í˜¸ë²„ ì—†ìŒ
+        if (roomIndex == 4) return;
+
+        SetMagnifierCursor(true);
+
+        if (_outline == null)
+        {
+            _outline = gameObject.GetComponent<Outline>();
+            if (_outline == null)
+            {
+                _outline = gameObject.AddComponent<Outline>();
+                _outline.effectDistance = new Vector2(4f, 4f);
+            }
+        }
+        _outline.enabled = true;
+        _outline.effectColor = new Color(1f, 0.9f, 0.2f, 0f);
+
+        if (_blinkCoroutine != null) StopCoroutine(_blinkCoroutine);
+        _blinkCoroutine = StartCoroutine(BlinkOutlineRoutine());
+    }
+
+    // ë§ˆìš°ìŠ¤ í˜¸ë²„ ì¢…ë£Œ
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        SetMagnifierCursor(false);
+
+        if (_blinkCoroutine != null)
+        {
+            StopCoroutine(_blinkCoroutine);
+            _blinkCoroutine = null;
+        }
+
+        if (_outline != null)
+        {
+            _outline.enabled = false;
+        }
+    }
+
+    private IEnumerator BlinkOutlineRoutine()
+    {
+        float speed = 4f;
+        while (true)
+        {
+            float alpha = (Mathf.Sin(Time.time * speed) + 1f) * 0.4f + 0.2f;
+            if (_outline != null)
+            {
+                _outline.effectColor = new Color(1f, 0.9f, 0.2f, alpha);
+            }
+            yield return null;
+        }
+    }
+
+    private void SetMagnifierCursor(bool showMagnifier)
+    {
+        if (showMagnifier)
+        {
+            if (_magnifierCursor == null)
+            {
+                _magnifierCursor = CreateMagnifierTexture();
+            }
+            Cursor.SetCursor(_magnifierCursor, CursorHotspot, CursorMode.Auto);
+        }
+        else
+        {
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        }
+    }
+
+    private Texture2D CreateMagnifierTexture()
+    {
+        Texture2D tex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+        
+        // íˆ¬ëª…í•˜ê²Œ ì²­ì†Œ
+        for (int y = 0; y < 32; y++)
+        {
+            for (int x = 0; x < 32; x++)
+            {
+                tex.SetPixel(x, y, Color.clear);
+            }
+        }
+
+        // ë‹ë³´ê¸° í”½ì…€ ì•„íŠ¸ ë“œë¡œì‰
+        Color black = Color.black;
+        Color white = new Color(1f, 1f, 1f, 0.5f);
+
+        int cx = 10, cy = 22;
+        int r = 6;
+        for (int y = 0; y < 32; y++)
+        {
+            for (int x = 0; x < 32; x++)
+            {
+                float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                if (d < r)
+                {
+                    tex.SetPixel(x, y, white);
+                }
+                if (Mathf.Abs(d - r) < 0.8f)
+                {
+                    tex.SetPixel(x, y, black);
+                }
+            }
+        }
+
+        for (int i = 0; i < 15; i++)
+        {
+            tex.SetPixel(cx + 4 + i, cy - 4 - i, black);
+            tex.SetPixel(cx + 5 + i, cy - 4 - i, black);
+        }
+
+        tex.Apply();
+        return tex;
+    }
+
+    private void PlayGoldSparkleEffect()
+    {
+        for (int i = 0; i < 12; i++)
+        {
+            GameObject particleObj = new GameObject("SparklePiece");
+            particleObj.transform.SetParent(transform.parent, false);
+            particleObj.transform.position = transform.position;
+
+            var img = particleObj.AddComponent<Image>();
+            img.color = new Color(1f, 0.85f, 0.2f, 1f);
+
+            var rect = particleObj.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(Random.Range(8f, 16f), Random.Range(8f, 16f));
+
+            var sparkle = particleObj.AddComponent<UISparklePiece>();
+            sparkle.Init(Random.insideUnitCircle.normalized * Random.Range(150f, 350f));
+        }
+    }
+}
+
+public class UISparklePiece : MonoBehaviour
+{
+    private Vector2 _velocity;
+    private float _gravity = -450f;
+    private float _lifeTime = 1f;
+    private float _elapsed = 0f;
+    private Image _image;
+    private RectTransform _rect;
+
+    public void Init(Vector2 initialVelocity)
+    {
+        _velocity = initialVelocity;
+        _image = GetComponent<Image>();
+        _rect = GetComponent<RectTransform>();
+    }
+
+    private void Update()
+    {
+        _elapsed += Time.deltaTime;
+        if (_elapsed >= _lifeTime)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        float t = _elapsed / _lifeTime;
+        _velocity.y += _gravity * Time.deltaTime;
+        _rect.anchoredPosition += _velocity * Time.deltaTime;
+
+        _rect.localScale = Vector3.one * (1f - t);
+        if (_image != null)
+        {
+            _image.color = new Color(_image.color.r, _image.color.g, _image.color.b, 1f - t);
+        }
     }
 }

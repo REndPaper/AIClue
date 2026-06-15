@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6972230243097613576
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3806002059542549991}
+  - component: {fileID: 3995751495423404259}
+  m_Layer: 0
+  m_Name: ResultController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3806002059542549991
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6972230243097613576}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 882.6432, y: 411.3219, z: -630.3542}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3995751495423404259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6972230243097613576}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a295615708c8d724d876519e5dc51dab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResultController
+  myGroup: {fileID: 0}
+  resultTitleText: {fileID: 0}
+  gradeText: {fileID: 0}
+  scoreText: {fileID: 0}
+  culpritResultText: {fileID: 0}
+  weaponResultText: {fileID: 0}
+  searchCountText: {fileID: 0}
+  chatCountText: {fileID: 0}
+  professorFeedbackText: {fileID: 0}
+  restartButton: {fileID: 0}

@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 public class SceneLoadingTask : ILoadingTask
 {
     private readonly string _sceneName;
-    public string TaskName => $"{_sceneName} ¾À µ¥ÀÌÅÍ¸¦ º¹±¸ÇÏ´Â Áß...";
+    public string TaskName => $"{_sceneName} ì”¬ ë°ì´í„°ë¥¼ ë³µêµ¬í•˜ëŠ” ì¤‘...";
     public float Progress { get; private set; }
 
     public SceneLoadingTask(string sceneName)
@@ -15,25 +15,18 @@ public class SceneLoadingTask : ILoadingTask
 
     public async Task ExecuteAsync()
     {
-        var tcs = new TaskCompletionSource<bool>();
         var asyncOp = SceneManager.LoadSceneAsync(_sceneName);
 
-        // ¾À ·Îµå°¡ ¿Ï·áµÉ ¶§±îÁö Progress °»½Å ·ÎÇÁ
+        // ì”¬ ë¡œë“œê°€ ì™„ë£Œë  ë•Œê¹Œì§€ Progress ê°±ì‹  ë£¨í”„
         while (!asyncOp.isDone)
         {
-            // À¯´ÏÆ¼ ¾À ·ÎµùÀº 0.9¿¡¼­ »ç½Ç»ó ¿Ï·áµÇ¹Ç·Î º¸Á¤ Ã³¸®
+            // ìœ ë‹ˆí‹° ì”¬ ë¡œë”©ì€ 0.9ì—ì„œ ì‚¬ì‹¤ìƒ ì™„ë£Œë˜ë¯€ë¡œ ë³´ì • ì²˜ë¦¬
             Progress = Mathf.Clamp01(asyncOp.progress / 0.9f);
 
-            if (asyncOp.progress >= 0.9f)
-            {
-                //tcs.SetResult(true);
-            }
-
-            // ¸ŞÀÎ ½º·¹µå¸¦ Á¡À¯ÇÏÁö ¾Êµµ·Ï ¾ÆÁÖ Àá±ñ ´ë±â
+            // ë©”ì¸ ìŠ¤ë ˆë“œë¥¼ ì ìœ í•˜ì§€ ì•Šë„ë¡ ì•„ì£¼ ì ê¹ ëŒ€ê¸°
             await Task.Yield();
         }
 
-        await tcs.Task;
         Progress = 1.0f;
     }
 }

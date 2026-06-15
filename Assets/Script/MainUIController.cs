@@ -8,59 +8,93 @@ public class MainUIController : MonoBehaviour
 {
     public enum InvestigationMode { Interrogation, Exploration }
 
-    [Header("State ÀüÈ¯ (CanvasGroup)")]
-    public CanvasGroup mainStateGroup; // ÀÌ ½ºÅ©¸³Æ®°¡ ´Ş¸° ÀüÃ¼ UI ±×·ì
+    [Header("State ì „í™˜ (CanvasGroup)")]
+    public CanvasGroup mainStateGroup; // ì´ ìŠ¤í¬ë¦½íŠ¸ê°€ ë‹¬ë¦° ì „ì²´ UI ê·¸ë£¹
 
-    [Header("Investigation Mode (Ä«¸Ş¶ó ¹× ¸ğµå)")]
+    [Header("Investigation Mode (2D íŒ¨ë„ ì„¤ì •)")]
     public InvestigationMode currentMode = InvestigationMode.Interrogation;
-    public Transform camPosInterrogation;
-    public Transform camPosExploration;
-    public float cameraMoveSpeed = 4f;
+    public CanvasGroup interrogationPanelGroup;
+    public CanvasGroup explorationPanelGroup;
 
     [Header("HUD Panels (CanvasGroup)")]
-    public CanvasGroup chatPanelGroup;      // ÁÂÃø ´ëÈ­ ·Î±× ÆĞ³Î
-    public CanvasGroup clueInventoryGroup; // ´Ü¼­ ÀÎº¥Åä¸® ÆĞ³Î
-    public CanvasGroup interrogationInputGroup; // ÇÏ´Ü ÀÔ·ÂÃ¢ (½É¹® ¸ğµå Àü¿ë)
+    public CanvasGroup chatPanelGroup;      // ëŒ€í™” ë¡œê·¸ íŒ¨ë„
+    public CanvasGroup clueInventoryGroup; // ë‹¨ì„œ ì¸ë²¤í† ë¦¬ íŒ¨ë„
+    public CanvasGroup interrogationInputGroup; // í•˜ë‹¨ ì…ë ¥ê¸° (ì‹¬ë¬¸ ëª¨ë“œ ìš©)
 
-    [Header("½É¹® UI ¿ä¼Ò")]
-    public GameObject speechBubble;         // ¿ëÀÇÀÚ ¸»Ç³¼±
+    [Header("ì‹¬ë¬¸ UI ìš”ì†Œ")]
+    public GameObject speechBubble;         // ë§í’ì„ 
     public TextMeshProUGUI speechBubbleText;
-    public TextMeshProUGUI chatHistoryText;
     public TextMeshProUGUI modeToggleBtnText;
     public TMP_InputField questionInput;
     public Button sendButton;
     public int maxQuestionLength = 60;
     public float bubbleDuration = 30f;
 
-    [Header("¿ëÀÇÀÚ ±³Ã¼ UI")]
-    public Button[] suspectButtons; // À¯´ÏÆ¼ È­¸é¿¡¼­ ¸¸µç ¹öÆ° 3°³ ÇÒ´ç
+    [Header("ìš©ì˜ì ì„ íƒ UI")]
+    public Button[] suspectButtons; // í™”ë©´ ìš°ì¸¡ì˜ ë²„íŠ¼ 3ê°œ í• ë‹¹
 
-    [Header("NPC ¹× ½ºÅ©·Ñ")]
-    public Transform npcPoint;
-    public GameObject[] npcPrefabs;
+    [Header("2D ìš©ì˜ì ì´ë¯¸ì§€ ì„¤ì •")]
+    public UnityEngine.UI.Image npcStandingImage;
+    public Sprite[] suspectSprites;
     public ScrollRect historyScrollRect;
 
-    [Header("´Ü¼­ ÀÎº¥Åä¸®")]
+    [Header("ë‹¨ì„œ ì¸ë²¤í† ë¦¬")]
     public List<EvidenceData> acquiredEvidences = new List<EvidenceData>();
-    public TextMeshProUGUI clueInventoryText;
 
-    private GameObject currentSpawnedNPC;
+    [Header("ë‹¨ì„œ íšë“ íŒì—… UI")]
+    public GameObject evidencePopupPanel;
+    public UnityEngine.UI.Image evidencePopupImage;
+    public TextMeshProUGUI evidencePopupNameText;
+    public TextMeshProUGUI evidencePopupDescText;
+    public Button evidencePopupCloseButton;
+
+    [Header("2D ë¦¬ìŠ¤íŠ¸í™” í…œí”Œë¦¿")]
+    public RectTransform clueScrollContent;
+    public GameObject clueItemTemplate; // ë¹„í™œì„±í™” ìƒíƒœì˜ í…œí”Œë¦¿
+
+    public RectTransform dialogueScrollContent;
+    public GameObject dialogueItemTemplate; // ë¹„í™œì„±í™” ìƒíƒœì˜ í…œí”Œë¦¿
+
+    private string _lastSentQuestion = ""; // AI ë‹µë³€ ì™„ë£Œ ì‹œ Q/A ê²°í•©ì„ ìœ„í•œ ì„ì‹œ ìºì‹±
+    private string _accumulatedChatHistory = ""; // ìµœì¢… ì±„ì ì— ì „ë‹¬í•  ì „ì²´ ì›ë³¸ í…ìŠ¤íŠ¸ ë¡œê·¸
+
+    private int _currentSuspectIndex = 0;
+    private Dictionary<int, List<GameObject>> _suspectDialogues = new Dictionary<int, List<GameObject>>();
+
     private Coroutine _bubbleTimerCoroutine;
-    private Coroutine _cameraMoveCoroutine;
-    private Camera _mainCam;
+    
+    private Vector2 _originalStandingPos;
+    private bool _hasOriginalPos = false;
+    private Coroutine _standingAnimationCoroutine;
+    private Coroutine _thinkingCoroutine;
+    private Coroutine _typingCoroutine;
+    private AudioSource _typingAudioSource;
+    private AudioClip _typingTickClip;
 
-    [Header("¼ö»ç ÁöÇ¥ µ¥ÀÌÅÍ (Áı°è¿ë)")]
+    [Header("ìˆ˜ì‚¬ ë°ì´í„° ì§‘ê³„")]
     public int totalSearchCount = 0;
     public int totalChatCount = 0;
 
+    private void Awake()
+    {
+        if (npcStandingImage != null && !_hasOriginalPos)
+        {
+            _originalStandingPos = npcStandingImage.GetComponent<RectTransform>().anchoredPosition;
+            _hasOriginalPos = true;
+        }
+
+        _typingAudioSource = gameObject.AddComponent<AudioSource>();
+        _typingAudioSource.playOnAwake = false;
+    }
+
     private void OnEnable()
     {
-        // 1. ±âÁ¸ ÀÌº¥Æ® ±¸µ¶
+        // 1. ê¸°ì¡´ ì´ë²¤íŠ¸ êµ¬ë…
         GlobalEventManager.Subscribe(GameEventType.AIResponded, OnAIResponded);
         GlobalEventManager.Subscribe(GameEventType.AIError, OnAIError);
         GlobalEventManager.Subscribe(GameEventType.EvidenceFound, OnEvidenceFound);
 
-        // ¡Ú 2. State Machine Àü¿ë ÀÌº¥Æ® ±¸µ¶
+        // â˜… 2. State Machine ì „ìš© ì´ë²¤íŠ¸ êµ¬ë…
         GlobalEventManager.Subscribe(GameEventType.ShowMainPlayUI, OnShowUI);
         GlobalEventManager.Subscribe(GameEventType.HideMainPlayUI, OnHideUI);
     }
@@ -77,8 +111,6 @@ public class MainUIController : MonoBehaviour
 
     private void Start()
     {
-        _mainCam = Camera.main;
-
         if (questionInput != null)
         {
             questionInput.characterLimit = maxQuestionLength;
@@ -91,36 +123,47 @@ public class MainUIController : MonoBehaviour
         }
 
         speechBubble.SetActive(false);
-        chatHistoryText.text = "<color=#FFFF00>¼ö»ç¸¦ ½ÃÀÛÇÕ´Ï´Ù. ´Ü¼­¸¦ ¹ÙÅÁÀ¸·Î ½É¹®ÇÏ½Ê½Ã¿À.</color>\n\n";
+        _accumulatedChatHistory = "<color=#FFFF00>ìˆ˜ì‚¬ë¥¼ ì‹œì‘í•©ë‹ˆë‹¤. ë‹¨ì„œë¥¼ ì°¾ê³  ìš©ì˜ìë¥¼ ì‹¬ë¬¸í•˜ì‹­ì‹œì˜¤.</color>\n\n";
 
         UpdateModeUI();
         SpawnNPC(0);
         SetupSuspectButtons();
 
-        if (clueInventoryText != null)
-            clueInventoryText.text = "ÇöÀç È®º¸µÈ ´Ü¼­°¡ ¾ø½À´Ï´Ù.\n\n";
+        if (evidencePopupCloseButton != null)
+        {
+            evidencePopupCloseButton.onClick.AddListener(() => {
+                if (evidencePopupPanel != null) evidencePopupPanel.SetActive(false);
+            });
+        }
+        if (evidencePopupPanel != null)
+        {
+            evidencePopupPanel.SetActive(false);
+        }
+
+        // í…œí”Œë¦¿ë“¤ì€ ì‹œì‘ ì‹œ ë¹„í™œì„±í™”
+        if (clueItemTemplate != null) clueItemTemplate.SetActive(false);
+        if (dialogueItemTemplate != null) dialogueItemTemplate.SetActive(false);
     }
 
-    // ¡Ú State ¹æ¼ÛÀ» µé¾úÀ» ¶§ ³» UI¸¦ ÄÑ°í ²ô´Â ·ÎÁ÷
+    // â˜… State ë°©ì†¡ì„ ë“¤ì—ˆì„ ë•Œ ë‚´ UIë¥¼ ì¼œê³  ë„ëŠ” ë¡œì§
     private void OnShowUI(object data) => SetCanvasGroup(mainStateGroup, true);
     private void OnHideUI(object data) => SetCanvasGroup(mainStateGroup, false);
 
-    // ¡Ú [»ç°Ç Á¾°á] ¹öÆ°¿¡ ¿¬°áÇÒ ÇÔ¼ö
+    // â˜… [ì‚¬ê±´ ì¢…ê²°] ë²„íŠ¼ì— ì—°ê²°í•  í•¨ìˆ˜
     public void TransitionToAnswerSubmit()
     {
-        // 1. Áö±İ±îÁö ¸ğÀº ¼ö»ç µ¥ÀÌÅÍ¿Í ´ëÈ­ ·Î±×¸¦ ¸ù¶¥ AnswerSubmitController·Î ¹è´Ş!
+        // 1. ì§€ê¸ˆê¹Œì§€ ëª¨ì€ ìˆ˜ì‚¬ ë°ì´í„°ì™€ ëŒ€í™” ë¡œê·¸ë¥¼ ëª½ë•… AnswerSubmitControllerë¡œ ë°°ë‹¬!
         var submitCtrl = FindObjectOfType<AnswerSubmitController>(true);
         if (submitCtrl != null)
         {
-            // ¡Ú ¼öÁ¤: chatHistoryText.text (½ÇÁ¦ ´ëÈ­ ·Î±×) Ãß°¡ Àü´Ş
-            submitCtrl.ReceiveInvestigationData(totalSearchCount, totalChatCount, chatHistoryText.text);
+            submitCtrl.ReceiveInvestigationData(totalSearchCount, totalChatCount, _accumulatedChatHistory);
         }
 
-        // 2. ¸Å´ÏÀú¿¡°Ô ½ºÅ×ÀÌÆ® º¯°æ ¿äÃ»
+        // 2. ë§¤ë‹ˆì €ì—ê²Œ ìŠ¤í…Œì´íŠ¸ ë³€ê²½ ìš”ì²­
         CoreSystemManager.Instance.ChangeState(GameState.AnswerSubmit);
     }
 
-    // ---------------- [UI Åä±Û ÇÔ¼ö] ----------------
+    // ---------------- [UI í† ê¸€ í•¨ìˆ˜] ----------------
     public void ToggleChatPanel()
     {
         bool isCurrentlyOff = chatPanelGroup.alpha < 0.5f;
@@ -155,32 +198,27 @@ public class MainUIController : MonoBehaviour
     public void ToggleInvestigationMode()
     {
         currentMode = (currentMode == InvestigationMode.Interrogation) ? InvestigationMode.Exploration : InvestigationMode.Interrogation;
-        if (_cameraMoveCoroutine != null) StopCoroutine(_cameraMoveCoroutine);
-        Transform target = (currentMode == InvestigationMode.Interrogation) ? camPosInterrogation : camPosExploration;
-        _cameraMoveCoroutine = StartCoroutine(MoveCameraSmoothly(target));
         UpdateModeUI();
     }
 
     private void UpdateModeUI()
     {
         bool isInterrogation = (currentMode == InvestigationMode.Interrogation);
-        modeToggleBtnText.text = (currentMode == InvestigationMode.Interrogation) ? "´Ü¼­ ¼ö»ö" : "¿ëÀÇÀÚ ½É¹®";
+        modeToggleBtnText.text = isInterrogation ? "í˜„ì¥ ìˆ˜ìƒ‰" : "ìš©ì˜ì ì‹¬ë¬¸";
+        
+        SetCanvasGroup(interrogationPanelGroup, isInterrogation);
+        SetCanvasGroup(explorationPanelGroup, !isInterrogation);
         SetCanvasGroup(interrogationInputGroup, isInterrogation);
-        if (!isInterrogation) speechBubble.SetActive(false);
-    }
-
-    private IEnumerator MoveCameraSmoothly(Transform target)
-    {
-        if (target == null) yield break;
-        while (Vector3.Distance(_mainCam.transform.position, target.position) > 0.01f ||
-               Quaternion.Angle(_mainCam.transform.rotation, target.rotation) > 0.1f)
+        
+        if (!isInterrogation)
         {
-            _mainCam.transform.position = Vector3.Lerp(_mainCam.transform.position, target.position, Time.deltaTime * cameraMoveSpeed);
-            _mainCam.transform.rotation = Quaternion.Slerp(_mainCam.transform.rotation, target.rotation, Time.deltaTime * cameraMoveSpeed);
-            yield return null;
+            speechBubble.SetActive(false);
+            if (npcStandingImage != null) npcStandingImage.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
         }
-        _mainCam.transform.position = target.position;
-        _mainCam.transform.rotation = target.rotation;
+        else
+        {
+            if (npcStandingImage != null) npcStandingImage.color = Color.white;
+        }
     }
 
     private void SetCanvasGroup(CanvasGroup group, bool isOpen)
@@ -196,14 +234,19 @@ public class MainUIController : MonoBehaviour
         string questionText = questionInput.text.Trim();
         if (string.IsNullOrEmpty(questionText) || currentMode != InvestigationMode.Interrogation) return;
 
-        // ¡Ú ¼ö»ç ÁöÇ¥ Áı°è: Áú¹® ´øÁú ¶§¸¶´Ù Ä«¿îÆ® ¾÷!
+        // â˜… ìˆ˜ì‚¬ ì§€í‘œ ì§‘ê³„: ì§ˆë¬¸ ë˜ì§ˆ ë•Œë§ˆë‹¤ ì¹´ìš´íŠ¸ ì—…!
         totalChatCount++;
 
         if (_bubbleTimerCoroutine != null) StopCoroutine(_bubbleTimerCoroutine);
+        if (_typingCoroutine != null) StopCoroutine(_typingCoroutine);
 
-        AppendChatHistory($"<color=#55AAFF>Çü»ç:</color> {questionText}");
+        _lastSentQuestion = questionText;
+        _accumulatedChatHistory += $"<color=#55AAFF>ìˆ˜ì‚¬ê´€:</color> {questionText}\n\n";
+
         speechBubble.SetActive(true);
-        speechBubbleText.text = "...";
+
+        if (_thinkingCoroutine != null) StopCoroutine(_thinkingCoroutine);
+        _thinkingCoroutine = StartCoroutine(AnimateThinkingBubble());
 
         PlayerSpeakData pack = new PlayerSpeakData
         {
@@ -219,17 +262,58 @@ public class MainUIController : MonoBehaviour
     private void OnAIResponded(object data)
     {
         string answer = data as string;
-        speechBubbleText.text = answer;
-        AppendChatHistory($"<color=#FF5555>¿ëÀÇÀÚ:</color> {answer}");
-        if (_bubbleTimerCoroutine != null) StopCoroutine(_bubbleTimerCoroutine);
-        _bubbleTimerCoroutine = StartCoroutine(CloseSpeechBubbleAfterDelay(bubbleDuration));
+        if (_thinkingCoroutine != null)
+        {
+            StopCoroutine(_thinkingCoroutine);
+            _thinkingCoroutine = null;
+        }
+
+        if (_typingCoroutine != null) StopCoroutine(_typingCoroutine);
+        _typingCoroutine = StartCoroutine(TypeTextRoutine(answer));
+
+        _accumulatedChatHistory += $"<color=#FF5555>ìš©ì˜ì:</color> {answer}\n\n";
+
+        CreateDialogueFeedCard(_lastSentQuestion, answer);
     }
 
     private void OnAIError(object data)
     {
-        speechBubbleText.text = "<color=red>´ë´äÀ» °ÅºÎÇÏ°í ÀÖ½À´Ï´Ù. (Åë½Å ¿À·ù)</color>";
-        if (_bubbleTimerCoroutine != null) StopCoroutine(_bubbleTimerCoroutine);
-        _bubbleTimerCoroutine = StartCoroutine(CloseSpeechBubbleAfterDelay(5f));
+        if (_thinkingCoroutine != null)
+        {
+            StopCoroutine(_thinkingCoroutine);
+            _thinkingCoroutine = null;
+        }
+
+        string errMsg = "<color=red>ë‹µë³€ì„ ê±°ë¶€í•˜ê³  ìˆìŠµë‹ˆë‹¤. (í†µì‹  ì˜¤ë¥˜)</color>";
+        if (_typingCoroutine != null) StopCoroutine(_typingCoroutine);
+        _typingCoroutine = StartCoroutine(TypeTextRoutine(errMsg));
+
+        _accumulatedChatHistory += $"{errMsg}\n\n";
+
+        CreateDialogueFeedCard(_lastSentQuestion, errMsg);
+    }
+
+    private void CreateDialogueFeedCard(string question, string answer)
+    {
+        if (dialogueScrollContent == null || dialogueItemTemplate == null) return;
+
+        var feedObj = Instantiate(dialogueItemTemplate, dialogueScrollContent);
+        feedObj.SetActive(true);
+
+        var qText = feedObj.transform.Find("QuestionText")?.GetComponent<TextMeshProUGUI>();
+        var aText = feedObj.transform.Find("AnswerText")?.GetComponent<TextMeshProUGUI>();
+
+        if (qText != null) qText.text = $"<color=#55AAFF><b>Q.</b></color> {question}";
+        if (aText != null) aText.text = $"<color=#FFCC55><b>A.</b></color> {answer}";
+
+        // í˜„ì¬ ìš©ì˜ì ëŒ€í™” ëª©ë¡ì— ì¶”ê°€
+        if (!_suspectDialogues.ContainsKey(_currentSuspectIndex))
+        {
+            _suspectDialogues[_currentSuspectIndex] = new List<GameObject>();
+        }
+        _suspectDialogues[_currentSuspectIndex].Add(feedObj);
+
+        StartCoroutine(ScrollToBottom());
     }
 
     private IEnumerator CloseSpeechBubbleAfterDelay(float delay)
@@ -241,9 +325,9 @@ public class MainUIController : MonoBehaviour
 
     public string GetAcquiredEvidencesContext()
     {
-        if (acquiredEvidences.Count == 0) return "ÇöÀç È®º¸µÈ Áõ°Å°¡ ¾ø½À´Ï´Ù.";
+        if (acquiredEvidences.Count == 0) return "í˜„ì¬ í™•ë³´í•œ ì¦ê±°ê°€ ì—†ìŠµë‹ˆë‹¤.";
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        sb.AppendLine("[ÇÃ·¹ÀÌ¾î°¡ È®º¸ÇÑ ´Ü¼­ ¸ñ·Ï]");
+        sb.AppendLine("[í”Œë ˆì´ì–´ê°€ í™•ë³´í•œ ë‹¨ì„œ ëª©ë¡]");
         foreach (var evi in acquiredEvidences)
             sb.AppendLine($"- {evi.name}: {evi.description}");
         return sb.ToString();
@@ -254,20 +338,56 @@ public class MainUIController : MonoBehaviour
         EvidenceData foundEvidence = data as EvidenceData;
         if (foundEvidence == null) return;
 
-        // ¡Ú ¼ö»ç ÁöÇ¥ Áı°è: ´Ü¼­¸¦ ¹ß°ßÇÒ ¶§¸¶´Ù ¼ö»ö Ä«¿îÆ® ¾÷!
+        // â˜… ìˆ˜ì‚¬ ì§€í‘œ ì§‘ê³„: ë‹¨ì„œë¥¼ ë°œê²¬í•  ë•Œë§ˆë‹¤ ìˆ˜ìƒ‰ ì¹´ìš´íŠ¸ ì—…!
         totalSearchCount++;
 
         if (acquiredEvidences.Exists(e => e.id == foundEvidence.id)) return;
         acquiredEvidences.Add(foundEvidence);
-        if (acquiredEvidences.Count == 1) clueInventoryText.text = "";
-        clueInventoryText.text += $"<color=#FFD700>¡á {foundEvidence.name}</color>\n<size=80%>{foundEvidence.description}</size>\n\n";
-        AppendChatHistory($"<color=#00FF00>[½Ã½ºÅÛ] ´Ü¼­ '{foundEvidence.name}' È®º¸.</color>");
+
+        CreateClueItemSlot(foundEvidence);
+
+        _accumulatedChatHistory += $"<color=#00FF00>[ì‹œìŠ¤í…œ] ì¦ê±° '{foundEvidence.name}' í™•ë³´.</color>\n\n";
+
+        // ë‹¨ì„œ íšë“ íŒì—… ì‘ë™
+        if (evidencePopupPanel != null)
+        {
+            if (evidencePopupImage != null)
+            {
+                Sprite spr = ScenarioManager.Instance.GetEvidenceSprite(foundEvidence.id);
+                evidencePopupImage.sprite = spr;
+                evidencePopupImage.gameObject.SetActive(spr != null);
+            }
+            if (evidencePopupNameText != null)
+            {
+                evidencePopupNameText.text = foundEvidence.name;
+            }
+            if (evidencePopupDescText != null)
+            {
+                evidencePopupDescText.text = foundEvidence.description;
+            }
+            evidencePopupPanel.SetActive(true);
+        }
     }
 
-    private void AppendChatHistory(string newText)
+    private void CreateClueItemSlot(EvidenceData evidence)
     {
-        chatHistoryText.text += newText + "\n\n";
-        StartCoroutine(ScrollToBottom());
+        if (clueScrollContent == null || clueItemTemplate == null) return;
+
+        var slotObj = Instantiate(clueItemTemplate, clueScrollContent);
+        slotObj.SetActive(true);
+
+        var iconImg = slotObj.transform.Find("ClueIcon")?.GetComponent<Image>();
+        var nameTxt = slotObj.transform.Find("ClueNameText")?.GetComponent<TextMeshProUGUI>();
+        var descTxt = slotObj.transform.Find("ClueDescText")?.GetComponent<TextMeshProUGUI>();
+
+        if (iconImg != null)
+        {
+            Sprite spr = ScenarioManager.Instance.GetEvidenceSprite(evidence.id);
+            iconImg.sprite = spr;
+            iconImg.gameObject.SetActive(spr != null);
+        }
+        if (nameTxt != null) nameTxt.text = evidence.name;
+        if (descTxt != null) descTxt.text = evidence.description;
     }
 
     private IEnumerator ScrollToBottom()
@@ -278,13 +398,166 @@ public class MainUIController : MonoBehaviour
 
     public void SpawnNPC(int suspectIndex)
     {
-        if (currentSpawnedNPC != null) Destroy(currentSpawnedNPC);
-        if (suspectIndex < 0 || suspectIndex >= npcPrefabs.Length) return;
-        if (npcPoint != null && npcPrefabs[suspectIndex] != null)
-            currentSpawnedNPC = Instantiate(npcPrefabs[suspectIndex], npcPoint.position, npcPoint.rotation, npcPoint);
-
+        if (suspectIndex < 0) return;
+        
+        _currentSuspectIndex = suspectIndex;
+        
         CharacterData targetData = ScenarioManager.Instance.GetCharacterDataByIndex(suspectIndex);
+        if (targetData == null) return;
+
+        Sprite activeSprite = ScenarioManager.Instance.GetSuspectSprite(targetData.id);
+        if (activeSprite == null && suspectIndex < suspectSprites.Length)
+        {
+            activeSprite = suspectSprites[suspectIndex];
+        }
+
+        if (npcStandingImage != null && activeSprite != null)
+        {
+            npcStandingImage.sprite = activeSprite;
+            npcStandingImage.gameObject.SetActive(true);
+
+            if (_standingAnimationCoroutine != null) StopCoroutine(_standingAnimationCoroutine);
+            _standingAnimationCoroutine = StartCoroutine(AnimateStandingImage());
+        }
+
         GlobalEventManager.Publish(GameEventType.TargetChanged, targetData);
-        AppendChatHistory($"<color=#00FF00>--- [{targetData.name}] ½É¹® ½ÃÀÛ ---</color>");
+
+        string npcNotice = $"--- [{targetData.name}] ì‹¬ë¬¸ ì‹œì‘ ---";
+        _accumulatedChatHistory += $"<color=#00FF00>{npcNotice}</color>\n\n";
+
+        // ê¸°ì¡´ ìƒì„±ëœ ëŒ€í™” ì¹´ë“œë“¤ ì¤‘ í˜„ì¬ ìš©ì˜ìì˜ ê²ƒë§Œ ì¼œê³  ë‚˜ë¨¸ì§€ëŠ” ëª¨ë‘ ìˆ¨ê¹€ ì²˜ë¦¬
+        foreach (var kvp in _suspectDialogues)
+        {
+            bool isCurrent = (kvp.Key == _currentSuspectIndex);
+            foreach (var card in kvp.Value)
+            {
+                if (card != null) card.SetActive(isCurrent);
+            }
+        }
+
+        // í•´ë‹¹ ìš©ì˜ì ëŒ€í™” ëª©ë¡ì— í”„ë¡œí•„ ì¹´ë“œê°€ ì—†ìœ¼ë©´ ê°€ì¥ ì²˜ìŒ ìƒì„±í•´ ì¤Œ
+        if (!_suspectDialogues.ContainsKey(_currentSuspectIndex) || _suspectDialogues[_currentSuspectIndex].Count == 0)
+        {
+            CreateProfileCard(targetData);
+        }
+
+        StartCoroutine(ScrollToBottom());
+    }
+
+    private void CreateProfileCard(CharacterData data)
+    {
+        if (dialogueScrollContent == null || dialogueItemTemplate == null || data == null) return;
+
+        var feedObj = Instantiate(dialogueItemTemplate, dialogueScrollContent);
+        feedObj.SetActive(true);
+        feedObj.transform.SetAsFirstSibling(); // ìŠ¤í¬ë¡¤ ë·° Content ë‚´ë¶€ ìµœìƒë‹¨ì— ë°°ì¹˜
+
+        var qText = feedObj.transform.Find("QuestionText")?.GetComponent<TextMeshProUGUI>();
+        var aText = feedObj.transform.Find("AnswerText")?.GetComponent<TextMeshProUGUI>();
+
+        if (qText != null) 
+            qText.text = $"<color=#FFCC55><b>[ìˆ˜ì‚¬ ëŒ€ìƒ ì •ë³´: {data.name}]</b></color>";
+        
+        if (aText != null) 
+            aText.text = $"<b>ì„±ê²©:</b> {data.personality}\n<b>ì•Œë¦¬ë°”ì´:</b> {data.alibi}\n<b>ì„¤ëª…:</b> {data.description}";
+
+        if (!_suspectDialogues.ContainsKey(_currentSuspectIndex))
+        {
+            _suspectDialogues[_currentSuspectIndex] = new List<GameObject>();
+        }
+        _suspectDialogues[_currentSuspectIndex].Insert(0, feedObj);
+    }
+
+    private IEnumerator AnimateStandingImage()
+    {
+        RectTransform rt = npcStandingImage.GetComponent<RectTransform>();
+        if (rt == null) yield break;
+
+        Vector2 targetPos = _hasOriginalPos ? _originalStandingPos : rt.anchoredPosition;
+        Vector2 startPos = targetPos + new Vector2(150f, 0f);
+
+        rt.anchoredPosition = startPos;
+        npcStandingImage.color = new Color(1f, 1f, 1f, 0f);
+
+        float duration = 0.45f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            t = Mathf.Sin(t * Mathf.PI * 0.5f); // Ease-Out
+
+            rt.anchoredPosition = Vector2.Lerp(startPos, targetPos, t);
+            npcStandingImage.color = new Color(1f, 1f, 1f, t);
+            yield return null;
+        }
+
+        rt.anchoredPosition = targetPos;
+        npcStandingImage.color = Color.white;
+        _standingAnimationCoroutine = null;
+    }
+
+    private IEnumerator AnimateThinkingBubble()
+    {
+        int dotCount = 0;
+        while (true)
+        {
+            string dots = new string('.', dotCount + 1);
+            speechBubbleText.text = dots;
+            dotCount = (dotCount + 1) % 3;
+            yield return new WaitForSeconds(0.4f);
+        }
+    }
+
+    private IEnumerator TypeTextRoutine(string fullText)
+    {
+        speechBubbleText.text = "";
+        
+        for (int i = 0; i <= fullText.Length; i++)
+        {
+            speechBubbleText.text = fullText.Substring(0, i);
+            if (i % 2 == 0)
+            {
+                PlayTypingTick();
+            }
+            yield return new WaitForSeconds(0.03f);
+        }
+
+        _typingCoroutine = null;
+
+        if (_bubbleTimerCoroutine != null) StopCoroutine(_bubbleTimerCoroutine);
+        _bubbleTimerCoroutine = StartCoroutine(CloseSpeechBubbleAfterDelay(bubbleDuration));
+    }
+
+    private void PlayTypingTick()
+    {
+        if (_typingAudioSource == null) return;
+        if (_typingTickClip == null)
+        {
+            _typingTickClip = CreateTickAudioClip();
+        }
+        if (_typingTickClip != null)
+        {
+            _typingAudioSource.PlayOneShot(_typingTickClip, 0.12f);
+        }
+    }
+
+    private AudioClip CreateTickAudioClip()
+    {
+        int sampleRate = 44100;
+        float duration = 0.015f;
+        int sampleCount = (int)(sampleRate * duration);
+        float[] samples = new float[sampleCount];
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float t = (float)i / sampleRate;
+            samples[i] = Mathf.Sin(2f * Mathf.PI * 1900f * t) * Mathf.Exp(-t * 220f);
+        }
+
+        AudioClip clip = AudioClip.Create("TypingTick", sampleCount, 1, sampleRate, false);
+        clip.SetData(samples, 0);
+        return clip;
     }
 }

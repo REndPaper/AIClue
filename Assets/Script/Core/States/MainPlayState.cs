@@ -1,36 +1,24 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
-public class MainPlayState : IGameState, ISceneChangeState
+public class MainPlayState : ISceneChangeState
 {
-    // 1. ÀÌ »óÅÂ´Â ¾À ÀüÈ¯ÀÌ ÇÊ¿äÇÑ »óÅÂÀÔ´Ï´Ù.
     public TransitionType Transition => TransitionType.SceneChange;
-
-    // 2. ÀÌµ¿ÇÒ Å¸°Ù ¾À ÀÌ¸§ (À¯´ÏÆ¼ ºôµå ¼¼ÆÃÀÇ ¾À ÀÌ¸§°ú ÀÏÄ¡ÇØ¾ß ÇÔ)
     public string TargetSceneName => "Main";
 
     public void Enter()
     {
-        Debug.Log("<color=#00FF00>[State] MainPlay ÁøÀÔ: °ÔÀÓ ·çÇÁ¸¦ ½ÃÀÛÇÕ´Ï´Ù.</color>");
-
-        // ¾À ·Îµå ÈÄ UI ÃÊ±âÈ­ ¿äÃ»
-        // (Å½»ö ºä¿Í ½É¹® ºäÀÇ ÃÊ±â »óÅÂ¸¦ ¼³Á¤ÇÏ´Â ÀÌº¥Æ®¸¦ ¹ßÇàÇÕ´Ï´Ù)
+        Debug.Log("[MainPlayState] ì§„ì…. ìˆ˜ìƒ‰ ë° ì‹¬ë¬¸ UIë¥¼ í™œì„±í™”í•©ë‹ˆë‹¤.");
         GlobalEventManager.Publish(GameEventType.InitMainPlayUI);
-
-        // BGM º¯°æÀÌ³ª Ä«¸Ş¶ó ÃÊ±âÈ­ µî '°ÔÀÓ ½ÃÀÛ' ¿¬ÃâÀ» ¿©±â¼­ ¼öÇà
+        GlobalEventManager.Publish(GameEventType.ShowMainPlayUI);
     }
 
     public void Execute()
     {
-        // ½Ç½Ã°£ °ÔÀÓ ½Â¸®/ÆĞ¹è Á¶°Ç Ã¼Å©³ª 
-        // ÇÏÀÌºê¸®µå Ä«¸Ş¶ó Lerp ·ÎÁ÷ º¸Á¶ µîÀÌ ÇÊ¿äÇÒ ¶§ »ç¿ëÇÕ´Ï´Ù.
     }
 
     public void Exit()
     {
-        Debug.Log("<color=#FF0000>[State] MainPlay Á¾·á: ¸Ş¸ğ¸®¸¦ Á¤¸®ÇÕ´Ï´Ù.</color>");
-
-        // °ÔÀÓ ¼¼¼Ç Á¾·á ½Ã ÇÊ¿äÇÑ µ¥ÀÌÅÍ Á¤¸® ¹× 
-        // °¡ºñÁö ÄÃ·º¼Ç(GC) À¯µµ ·ÎÁ÷
+        Debug.Log("[MainPlayState] í‡´ì¥. ìˆ˜ìƒ‰ ë° ì‹¬ë¬¸ UIë¥¼ ë¹„í™œì„±í™”í•©ë‹ˆë‹¤.");
+        GlobalEventManager.Publish(GameEventType.HideMainPlayUI);
     }
 }

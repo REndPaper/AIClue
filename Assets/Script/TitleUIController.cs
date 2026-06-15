@@ -1,23 +1,23 @@
 using UnityEngine;
-using UnityEngine.UI; // ¹öÆ° Á¦¾î¿ë
+using UnityEngine.UI; // ë²„íŠ¼ ì œì–´ìš©
 using TMPro;
 
 public class TitleUIController : MonoBehaviour
 {
-    [Header("UI ÆĞ³Î ÇÒ´ç (CanvasGroup)")]
+    [Header("UI íŒ¨ë„ í• ë‹¹ (CanvasGroup)")]
     public CanvasGroup mainMenuGroup;
     public CanvasGroup scenarioSelectGroup;
 
-    [Header("½Ã³ª¸®¿À Á¤º¸ ÅØ½ºÆ® (Folder UI)")]
+    [Header("ì‹œë‚˜ë¦¬ì˜¤ ì •ë³´ í…ìŠ¤íŠ¸ (Folder UI)")]
     public TextMeshProUGUI CaseNoTxt;
     public TextMeshProUGUI CaseTxt;
     public TextMeshProUGUI OverviewTxt;
     public TextMeshProUGUI VictimTxt;
     public TextMeshProUGUI PlaceTxt;
 
-    [Header("Á¦¾î ¹öÆ°")]
-    public Button prevBtn; // ÀÌÀü »ç°Ç ¹öÆ°
-    public Button nextBtn; // ´ÙÀ½ »ç°Ç ¹öÆ°
+    [Header("ì œì–´ ë²„íŠ¼")]
+    public Button prevBtn; // ì´ì „ ì‚¬ê±´ ë²„íŠ¼
+    public Button nextBtn; // ë‹¤ìŒ ì‚¬ê±´ ë²„íŠ¼
 
     public Button startBtn;
 
@@ -37,45 +37,45 @@ public class TitleUIController : MonoBehaviour
         GlobalEventManager.Unsubscribe(GameEventType.HideScenarioSelectUI, HideScenarioSelect);
     }
 
-    // ---------------- [ÀÌº¥Æ® ¼ö½Å ½Ã ÀÛµ¿ÇÒ ÇÔ¼öµé] ----------------
+    // ---------------- [ì´ë²¤íŠ¸ ìˆ˜ì‹  ì‹œ ì‘ë™í•  í•¨ìˆ˜ë“¤] ----------------
     private void ShowMainMenu(object data = null) => EnablePanel(mainMenuGroup);
     private void HideMainMenu(object data = null) => DisablePanel(mainMenuGroup);
 
     private void ShowScenarioSelect(object data = null)
     {
         EnablePanel(scenarioSelectGroup);
-        UpdateScenarioUI(); // ¡Ú È­¸éÀÌ ÄÑÁú ¶§ µ¥ÀÌÅÍ¸¦ »õ·Î°íÄ§ÇÕ´Ï´Ù.
+        UpdateScenarioUI(); // â˜… í™”ë©´ì´ ì¼œì§ˆ ë•Œ ë°ì´í„°ë¥¼ ìƒˆë¡œê³ ì¹¨í•©ë‹ˆë‹¤.
     }
     private void HideScenarioSelect(object data = null) => DisablePanel(scenarioSelectGroup);
 
-    // ---------------- [µ¥ÀÌÅÍ ¹ÙÀÎµù: JSON -> UI] ----------------
+    // ---------------- [ë°ì´í„° ë°”ì¸ë”©: JSON -> UI] ----------------
     private void UpdateScenarioUI()
     {
-        // 1. ½Ã³ª¸®¿À ¸Å´ÏÀú¿¡ ÀÌ¹Ì ·ÎµåµÈ µ¥ÀÌÅÍ°¡ ÀÖ´ÂÁö È®ÀÎ
+        // 1. ì‹œë‚˜ë¦¬ì˜¤ ë§¤ë‹ˆì €ì— ì´ë¯¸ ë¡œë“œëœ ë°ì´í„°ê°€ ìˆëŠ”ì§€ í™•ì¸
         var data = ScenarioManager.Instance.currentScenario;
         if (data == null || string.IsNullOrEmpty(data.caseNo))
         {
-            // ¾ÆÁ÷ ·Îµå ÀüÀÌ¶ó¸é ±âº» ÆÄÀÏ ÇÏ³ª¸¦ ·ÎµåÇÔ
-            ScenarioManager.Instance.SetupGame("Scenario/CASE_001.json");
+            // ì•„ì§ ë¡œë“œ ì „ì´ë¼ë©´ ê¸°ë³¸ íŒŒì¼ í•˜ë‚˜ë¥¼ ë¡œë“œí•¨
+            ScenarioManager.Instance.SetupGame("Scenario/CASE_001/CASE_001.json");
             data = ScenarioManager.Instance.currentScenario;
         }
 
-        // 2. UI ÅØ½ºÆ®¿¡ µ¥ÀÌÅÍ ²È¾Æ³Ö±â
+        // 2. UI í…ìŠ¤íŠ¸ì— ë°ì´í„° ê½‚ì•„ë„£ê¸°
         CaseNoTxt.text = data.caseNo.Replace("_", " ");
         CaseTxt.text = data.caseName;
         OverviewTxt.text = data.overview;
         VictimTxt.text = data.victim;
         PlaceTxt.text = data.place;
 
-        // 3. ÀÌÀü/´ÙÀ½ ¹öÆ° ²ô±â & ½ÃÀÛ ¹öÆ° È°¼ºÈ­ È®½ÇÈ÷ ÇÏ±â
+        // 3. ì´ì „/ë‹¤ìŒ ë²„íŠ¼ ë„ê¸° & ì‹œì‘ ë²„íŠ¼ í™œì„±í™” í™•ì‹¤íˆ í•˜ê¸°
         if (prevBtn != null) prevBtn.gameObject.SetActive(false);
         if (nextBtn != null) nextBtn.gameObject.SetActive(false);
         if (startBtn != null) startBtn.gameObject.SetActive(true);
 
-        Debug.Log($"[TitleUI] {data.caseNo} µ¥ÀÌÅÍ ¹ÙÀÎµù ¿Ï·á!");
+        Debug.Log($"[TitleUI] {data.caseNo} ë°ì´í„° ë°”ì¸ë”© ì™„ë£Œ!");
     }
 
-    // ---------------- [CanvasGroup ¿Â¿ÀÇÁ ÇïÆÛ ÇÔ¼ö] ----------------
+    // ---------------- [CanvasGroup ì˜¨ì˜¤í”„ í—¬í¼ í•¨ìˆ˜] ----------------
     private void EnablePanel(CanvasGroup group)
     {
         if (group == null) return;
@@ -92,17 +92,17 @@ public class TitleUIController : MonoBehaviour
         group.blocksRaycasts = false;
     }
 
-    // ---------------- [¹öÆ° Å¬¸¯ ÀÌº¥Æ®] ----------------
-    public void OnClickStartGame() // ¸ŞÀÎ¸Ş´ºÀÇ '°ÔÀÓ ½ÃÀÛ' ¹öÆ°
+    // ---------------- [ë²„íŠ¼ í´ë¦­ ì´ë²¤íŠ¸] ----------------
+    public void OnClickStartGame() // ë©”ì¸ë©”ë‰´ì˜ 'ê²Œì„ ì‹œì‘' ë²„íŠ¼
     {
         CoreSystemManager.Instance.ChangeState(GameState.ScenarioSelect);
     }
 
-    public void OnClickStartInvestigation() // ½Ã³ª¸®¿À ¼±ÅÃÃ¢ÀÇ 'Ãß¸® ½ÃÀÛ' ¹öÆ°
+    public void OnClickStartInvestigation() // ì‹œë‚˜ë¦¬ì˜¤ ì„ íƒì°½ì˜ 'ì¶”ë¦¬ ì‹œì‘' ë²„íŠ¼
     {
-        Debug.Log("[TitleUI] »ç°Ç ¼ö»ç¸¦ ½ÃÀÛÇÕ´Ï´Ù! ¸ŞÀÎ ÇÃ·¹ÀÌ »óÅÂ·Î ÀüÈ¯.");
-        // ¿©±â¼­ ½ÇÁ¦·Î °ÔÀÓ ·çÇÁ(MainPlay)·Î ³Ñ¾î°©´Ï´Ù.
-        CoreSystemManager.Instance.ChangeState(GameState.MainPlay);
+        Debug.Log("[TitleUI] ì‚¬ê±´ ìˆ˜ì‚¬ë¥¼ ì‹œì‘í•©ë‹ˆë‹¤! ë©”ì¸ í”Œë ˆì´ ìƒíƒœë¡œ ì „í™˜.");
+        // ì—¬ê¸°ì„œ ì‹¤ì œë¡œ ê²Œì„ ë£¨í”„(MainPlay)ë¡œ ë„˜ì–´ê°‘ë‹ˆë‹¤.
+        CoreSystemManager.Instance.ChangeState(GameState.Briefing);
     }
 
     public void OnClickBackToMain()

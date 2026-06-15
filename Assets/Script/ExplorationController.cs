@@ -1,70 +1,37 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 public class ExplorationController : MonoBehaviour
 {
-    public Camera mainCam;
-    public LayerMask roomLayer;
-
-    // ¡Ú MainUIController¸¦ Ä³½ÌÇÒ º¯¼ö
     private MainUIController _mainUI;
 
     private void Start()
     {
-        if (mainCam == null) mainCam = Camera.main;
-
-        // ¡Ú Start¿¡¼­ µü ÇÑ ¹ø¸¸ Ã£¾Æ¼­ ¿¬°áÇØµÓ´Ï´Ù. (¼º´É ÀúÇÏ ¾øÀ½, ½Ì±ÛÅæ ºÒÇÊ¿ä!)
         _mainUI = FindObjectOfType<MainUIController>();
         if (_mainUI == null)
         {
-            Debug.LogError("[Exploration] ¾À¿¡ MainUIController°¡ ¾ø½À´Ï´Ù!");
+            Debug.LogError("[Exploration] MainUIControllerë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
         }
     }
 
-    private void Update()
+    public void OnClickRoom(RoomObject room)
     {
+        if (room == null) return;
         if (_mainUI == null || _mainUI.currentMode != MainUIController.InvestigationMode.Exploration)
             return;
 
-        // =================================================================
-        // ¡Ú ¼öÁ¤µÊ: Input.GetMouseButtonDown(0) ´ë½Å »õ·Î¿î ¸¶¿ì½º °¨Áö ¹æ½Ä »ç¿ë
-        // =================================================================
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        if (room.roomIndex == 4)
         {
-            // UI¸¦ Å¬¸¯ÇÑ °Å¸é ¹«½Ã (EventSystemÀº ±¸Çü/½ÅÇü ¾Ë¾Æ¼­ È£È¯µÊ)
-            if (EventSystem.current.IsPointerOverGameObject()) return;
-
-            ExecuteRaycast();
+            Debug.Log("[Exploration] ì¤‘ì•™ì˜ ì·¨ì¡°ì‹¤(ì‹¬ë¬¸ ëª¨ë“œ) êµ¬ì—­ì…ë‹ˆë‹¤.");
+            return;
         }
-    }
 
-    private void ExecuteRaycast()
-    {
-        // ¡Ú ¼öÁ¤µÊ: Input.mousePosition ´ë½Å Mouse.current.position.ReadValue() »ç¿ë
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Ray ray = mainCam.ScreenPointToRay(mousePos);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f, roomLayer))
+        if (room.isSearched)
         {
-            RoomObject room = hit.collider.GetComponent<RoomObject>();
-            if (room != null)
-            {
-                if (room.roomIndex == 4)
-                {
-                    Debug.Log("<color=red>[Exploration]</color> ¿©±â´Â »ç°Ç ÇöÀåÀÔ´Ï´Ù.");
-                    return;
-                }
-
-                if (room.isSearched)
-                {
-                    Debug.Log("[Exploration] ÀÌ¹Ì »ô»ôÀÌ µÚÁ®º» ¹æÀÔ´Ï´Ù.");
-                    return;
-                }
-
-                SearchRoom(room);
-            }
+            Debug.Log("[Exploration] ì´ë¯¸ ìˆ˜ìƒ‰ ì™„ë£Œëœ ë°©ì…ë‹ˆë‹¤.");
+            return;
         }
+
+        SearchRoom(room);
     }
 
     private void SearchRoom(RoomObject room)
@@ -79,7 +46,7 @@ public class ExplorationController : MonoBehaviour
         else
         {
             room.MarkAsSearched(false);
-            Debug.Log("[Exploration] ÀÌ ¹æ¿¡´Â Æ¯ÀÌÁ¡ÀÌ ¾ø½À´Ï´Ù.");
+            Debug.Log("[Exploration] ì´ ë°©ì—ì„œëŠ” íŠ¹ë³„í•œ ì¦ê±°ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
         }
     }
 }

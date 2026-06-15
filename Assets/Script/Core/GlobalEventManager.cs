@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// ÇÃ·¹ÀÌ¾î°¡ ¸»ÇÒ ¶§ Àü´ŞÇÒ µ¥ÀÌÅÍ ²Ù·¯¹Ì
+// í”Œë ˆì´ì–´ê°€ ë§í•  ë•Œ ì „ë‹¬í•  ë°ì´í„° ê¾¸ëŸ¬ë¯¸
 public class PlayerSpeakData
 {
-    public string question;         // À¯Àú°¡ Ä£ Áú¹®
-    public string evidenceContext;  // ÇöÀç º¸À¯ÇÑ ´Ü¼­ ¸®½ºÆ®
+    public string question;         // ìœ ì €ê°€ ì¹œ ì§ˆë¬¸
+    public string evidenceContext;  // í˜„ì¬ ë³´ìœ í•œ ë‹¨ì„œ ë¦¬ìŠ¤íŠ¸
 }
 
 public enum GameEventType
@@ -32,15 +32,18 @@ public enum GameEventType
     ShowResultUI,
     HideResultUI,
 
-    ClueObtained,       // µ¥ÀÌÅÍ: È¹µæÇÑ ´Ü¼­ °´Ã¼(ClueData)
-    AnswerSubmitted,    // µ¥ÀÌÅÍ: Á¦ÃâµÈ Á¤´ä µ¥ÀÌÅÍ
+    ShowBriefingUI,
+    HideBriefingUI,
 
-    PlayerSpeaks,       // ÇÃ·¹ÀÌ¾î°¡ Ã¤ÆÃÀ» ÀÔ·ÂÇßÀ» ¶§ (UI -> AI)
-    AIThinkingStart,   // AI°¡ Ãß·ĞÀ» ½ÃÀÛÇÒ ¶§ (AI -> UI, ¹öÆ° Àá±İ¿ë)
-    AIResponded,        // AI°¡ ´ë´äÀ» ¿Ï·áÇßÀ» ¶§ (AI -> UI)
-    AIError,             // Ãß·Ğ Áß ¿¡·¯ ¹ß»ı ½Ã (AI -> UI)
+    ClueObtained,       // ë°ì´í„°: íšë“í•œ ë‹¨ì„œ ê°ì²´(ClueData)
+    AnswerSubmitted,    // ë°ì´í„°: ì œì¶œëœ ì •ë‹µ ë°ì´í„°
 
-    UpdateUIScore,      // µ¥ÀÌÅÍ: ÇöÀç Á¡¼ö(int)
+    PlayerSpeaks,       // í”Œë ˆì´ì–´ê°€ ì±„íŒ…ì„ ì…ë ¥í–ˆì„ ë•Œ (UI -> AI)
+    AIThinkingStart,   // AIê°€ ì¶”ë¡ ì„ ì‹œì‘í•  ë•Œ (AI -> UI, ë²„íŠ¼ ì ê¸ˆìš©)
+    AIResponded,        // AIê°€ ëŒ€ë‹µì„ ì™„ë£Œí–ˆì„ ë•Œ (AI -> UI)
+    AIError,             // ì¶”ë¡  ì¤‘ ì—ëŸ¬ ë°œìƒ ì‹œ (AI -> UI)
+
+    UpdateUIScore,      // ë°ì´í„°: í˜„ì¬ ì ìˆ˜(int)
 
     ShowLoadingScreen,
     LoadingTextChanged,
@@ -50,11 +53,11 @@ public enum GameEventType
 
 public static class GlobalEventManager
 {
-    // ÀÌº¥Æ®¸¦ ÀúÀåÇÒ µñ¼Å³Ê¸®. µ¥ÀÌÅÍ Àü´ŞÀ» À§ÇØ Action<object>¸¦ »ç¿ëÇÕ´Ï´Ù.
+    // ì´ë²¤íŠ¸ë¥¼ ì €ì¥í•  ë”•ì…”ë„ˆë¦¬. ë°ì´í„° ì „ë‹¬ì„ ìœ„í•´ Action<object>ë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
     private static readonly Dictionary<GameEventType, Action<object>> eventDictionary = new Dictionary<GameEventType, Action<object>>();
 
     /// <summary>
-    /// ÀÌº¥Æ® ±¸µ¶ (UI ½ºÅ©¸³Æ®ÀÇ OnEnable¿¡¼­ ÁÖ·Î È£Ãâ)
+    /// ì´ë²¤íŠ¸ êµ¬ë… (UI ìŠ¤í¬ë¦½íŠ¸ì˜ OnEnableì—ì„œ ì£¼ë¡œ í˜¸ì¶œ)
     /// </summary>
     public static void Subscribe(GameEventType eventType, Action<object> listener)
     {
@@ -69,7 +72,7 @@ public static class GlobalEventManager
     }
 
     /// <summary>
-    /// ÀÌº¥Æ® ±¸µ¶ ÇØÁ¦ (UI ½ºÅ©¸³Æ®ÀÇ OnDisable¿¡¼­ ¹İµå½Ã È£ÃâÇÏ¿© ¸Ş¸ğ¸® ´©¼ö ¹æÁö)
+    /// ì´ë²¤íŠ¸ êµ¬ë… í•´ì œ (UI ìŠ¤í¬ë¦½íŠ¸ì˜ OnDisableì—ì„œ ë°˜ë“œì‹œ í˜¸ì¶œí•˜ì—¬ ë©”ëª¨ë¦¬ ëˆ„ìˆ˜ ë°©ì§€)
     /// </summary>
     public static void Unsubscribe(GameEventType eventType, Action<object> listener)
     {
@@ -80,7 +83,7 @@ public static class GlobalEventManager
     }
 
     /// <summary>
-    /// ÀÌº¥Æ® ¹ßÇà (·ÎÁ÷ Ã³¸® ÈÄ È£Ãâ)
+    /// ì´ë²¤íŠ¸ ë°œí–‰ (ë¡œì§ ì²˜ë¦¬ í›„ í˜¸ì¶œ)
     /// </summary>
     public static void Publish(GameEventType eventType, object eventData = null)
     {

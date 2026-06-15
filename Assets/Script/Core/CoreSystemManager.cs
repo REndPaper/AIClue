@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -37,6 +37,7 @@ public class CoreSystemManager : MonoBehaviour
             { GameState.Splash, new SplashState() },
             { GameState.MainMenu, new MainMenuState() },
             { GameState.ScenarioSelect, new ScenarioSelectState() },
+            { GameState.Briefing, new BriefingState() },
             { GameState.MainPlay, new MainPlayState() },
             { GameState.AnswerSubmit, new AnswerSubmitState() },
             { GameState.Result, new ResultState() }
