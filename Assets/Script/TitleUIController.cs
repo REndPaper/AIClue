@@ -33,6 +33,8 @@ public class TitleUIController : MonoBehaviour
         GlobalEventManager.Subscribe(GameEventType.HideMainMenuUI, HideMainMenu);
         GlobalEventManager.Subscribe(GameEventType.ShowScenarioSelectUI, ShowScenarioSelect);
         GlobalEventManager.Subscribe(GameEventType.HideScenarioSelectUI, HideScenarioSelect);
+
+        LLMManager.OnModelIndexChanged += OnModelIndexChanged;
     }
 
     private void OnDisable()
@@ -41,6 +43,17 @@ public class TitleUIController : MonoBehaviour
         GlobalEventManager.Unsubscribe(GameEventType.HideMainMenuUI, HideMainMenu);
         GlobalEventManager.Unsubscribe(GameEventType.ShowScenarioSelectUI, ShowScenarioSelect);
         GlobalEventManager.Unsubscribe(GameEventType.HideScenarioSelectUI, HideScenarioSelect);
+
+        LLMManager.OnModelIndexChanged -= OnModelIndexChanged;
+    }
+
+    private void OnModelIndexChanged(int index)
+    {
+        if (modelDropdown != null)
+        {
+            modelDropdown.value = index;
+            Debug.Log($"[TitleUI] AI 모델이 폴백/변경되어 UI를 인덱스 {index}로 갱신합니다.");
+        }
     }
 
     // ---------------- [이벤트 수신 시 작동할 함수들] ----------------
@@ -231,11 +244,87 @@ public class TitleUIController : MonoBehaviour
         AudioListener.volume = value;
     }
 
-    private void OnModelChanged(int index)
+    private GameObject loadingPopupInstance;
+
+    private void ShowLoadingPopup(string message)
+    {
+        if (loadingPopupInstance != null)
+        {
+            Destroy(loadingPopupInstance);
+        }
+
+        GameObject mainMenuUI = GameObject.Find("MainMenuUI");
+        if (mainMenuUI == null) return;
+
+        loadingPopupInstance = new GameObject("TempLoadingPopup");
+        loadingPopupInstance.transform.SetParent(mainMenuUI.transform, false);
+
+        RectTransform rectTrans = loadingPopupInstance.AddComponent<RectTransform>();
+        rectTrans.anchorMin = Vector2.zero;
+        rectTrans.anchorMax = Vector2.one;
+        rectTrans.sizeDelta = Vector2.zero;
+        rectTrans.anchoredPosition = Vector2.zero;
+
+        Image bgImg = loadingPopupInstance.AddComponent<Image>();
+        bgImg.color = new Color(0f, 0f, 0f, 0.75f);
+
+        CanvasGroup group = loadingPopupInstance.AddComponent<CanvasGroup>();
+        group.alpha = 1f;
+        group.interactable = true;
+        group.blocksRaycasts = true;
+
+        GameObject textObj = new GameObject("LoadingText");
+        textObj.transform.SetParent(loadingPopupInstance.transform, false);
+        
+        TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
+        tmpText.text = message;
+        tmpText.fontSize = 24;
+        tmpText.color = Color.white;
+        tmpText.alignment = TextAlignmentOptions.Center;
+
+        if (modelDropdown != null && modelDropdown.captionText != null)
+        {
+            tmpText.font = modelDropdown.captionText.font;
+        }
+
+        RectTransform textRect = textObj.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.sizeDelta = Vector2.zero;
+        textRect.anchoredPosition = Vector2.zero;
+    }
+
+    private void HideLoadingPopup()
+    {
+        if (loadingPopupInstance != null)
+        {
+            Destroy(loadingPopupInstance);
+            loadingPopupInstance = null;
+        }
+    }
+
+    private async void OnModelChanged(int index)
     {
         if (LLMManager.Instance != null)
         {
-            LLMManager.Instance.ChangeQualitySetting(index);
+            if (LLMManager.Instance.qualityIndex == index)
+            {
+                var weightsField = typeof(LLMManager).GetField("_weights", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var weights = weightsField?.GetValue(LLMManager.Instance);
+                if (weights != null)
+                {
+                    return;
+                }
+            }
+
+            ShowLoadingPopup("AI 모델을 로드하고 확인하는 중입니다...");
+            
+            await System.Threading.Tasks.Task.Delay(100);
+            
+            LLMManager.Instance.qualityIndex = index;
+            await LLMManager.Instance.LoadModelAsync();
+            
+            HideLoadingPopup();
         }
     }
 

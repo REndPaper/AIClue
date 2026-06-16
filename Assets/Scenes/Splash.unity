@@ -394,8 +394,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScenarioManager
   currentScenario:
-    scenarioId: 
-    synopsis: 
+    caseNo: 
+    caseName: 
+    overview: 
+    victim: 
+    place: 
+    objective: 
     characters: []
     weapons: []
   trueCulprit:
@@ -464,6 +468,16 @@ MonoBehaviour:
     id: 
     name: 
     evidences: []
+  roomNames:
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
   gridRooms:
   - id: 
     name: 
@@ -507,7 +521,7 @@ MonoBehaviour:
   modelpaths:
   - Models/gemma-3-4b-it-Q4_K_M.gguf
   - Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf
-  - Models/gemma-3-12b-it-Q4_K_M.gguf
+  - Models/gemma-3-12b-it-qat-int4-Q4_K_M.gguf
   qualityIndex: 0
   contextWindowSize: 4096
 --- !u!1001 &4934456101015131922

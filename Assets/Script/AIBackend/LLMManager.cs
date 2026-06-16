@@ -13,6 +13,9 @@ public class LLMManager : MonoBehaviour
 {
     public static LLMManager Instance { get; private set; }
 
+    // 모델 인덱스 변경 알림 이벤트 (UI 연동용)
+    public static event Action<int> OnModelIndexChanged;
+
     [Header("모델 경로")]
     [Tooltip("StreamingAssets 폴더 기준 상대 경로를 입력하세요.")]
     public string[] modelpaths = { "Models/gemma-3-4b-it-Q4_K_M.gguf", "Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf", "Models/gemma-3-12b-it-qat-int4-Q4_K_M.gguf" };
@@ -125,35 +128,49 @@ public class LLMManager : MonoBehaviour
         string relativePath = modelpaths[qualityIndex];
         string absolutePath = System.IO.Path.Combine(Application.streamingAssetsPath, relativePath);
 
-        // [추가] 슬래시를 윈도우식(\)으로 통일하고, 깔끔한 절대 경로로 다림질
+        // [추가] 백슬래시 윈도우식(\\)으로 통일하고, 깔끔한 절대 경로로 다듬기
         absolutePath = System.IO.Path.GetFullPath(absolutePath.Replace("/", "\\"));
 
         Debug.Log($"[로컬 AI] 모델 로딩 시작... (Index: {qualityIndex}, Path: {relativePath})");
 
-        // 기존에 로드된 모델이 있다면 VRAM 누수 방지를 위해 안전하게 메모리 해제
+        // 기존에 로딩된 모델이 있다면 VRAM 누수 방지를 위해 안전하게 메모리 해제
         DisposeAI();
+
+        bool isFallback = false;
+        string fallbackPath = "";
 
         await Task.Run(() =>
         {
             bool success = LoadModelInternal(absolutePath);
             if (!success && qualityIndex != 0)
             {
-                Debug.LogWarning("[로컬 AI] 모델 로딩 실패로 인해 최하옵(Gemma 3 4B-it)으로 고정 후 재시도합니다.");
-                qualityIndex = 0;
-                PlayerPrefs.SetInt("SelectedModelIndex", 0);
-                PlayerPrefs.Save();
-
-                // 최하옵 경로 계산
-                string fallbackPath = System.IO.Path.Combine(Application.streamingAssetsPath, modelpaths[0]);
-                fallbackPath = System.IO.Path.GetFullPath(fallbackPath.Replace("/", "\\"));
-
-                // 불완전 리소스 재정리
-                DisposeAI();
-
-                // 최하옵으로 로드 재시도
-                LoadModelInternal(fallbackPath);
+                isFallback = true;
             }
         });
+
+        if (isFallback)
+        {
+            Debug.LogWarning("[로컬 AI] 모델 로딩 실패로 인해 최하옵(Gemma 3 4B-it)으로 고정 후 재시도합니다.");
+            qualityIndex = 0;
+            PlayerPrefs.SetInt("SelectedModelIndex", 0);
+            PlayerPrefs.Save();
+
+            // 최하옵 경로 계산 (메인 스레드에서 안전하게 실행!)
+            fallbackPath = System.IO.Path.Combine(Application.streamingAssetsPath, modelpaths[0]);
+            fallbackPath = System.IO.Path.GetFullPath(fallbackPath.Replace("/", "\\"));
+
+            // 불완전 리소스 정리
+            DisposeAI();
+
+            // 최하옵으로 로드 재시도
+            await Task.Run(() =>
+            {
+                LoadModelInternal(fallbackPath);
+            });
+
+            // UI 연동을 위한 이벤트 발생
+            OnModelIndexChanged?.Invoke(0);
+        }
     }
 
     /// <summary>
