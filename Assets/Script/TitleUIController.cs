@@ -7,6 +7,12 @@ public class TitleUIController : MonoBehaviour
     [Header("UI 패널 할당 (CanvasGroup)")]
     public CanvasGroup mainMenuGroup;
     public CanvasGroup scenarioSelectGroup;
+    public CanvasGroup buttonPanelGroup;
+    public CanvasGroup settingsPanelGroup;
+
+    [Header("설정 UI 요소")]
+    public Slider volumeSlider;
+    public TMP_Dropdown modelDropdown;
 
     [Header("시나리오 정보 텍스트 (Folder UI)")]
     public TextMeshProUGUI CaseNoTxt;
@@ -90,6 +96,67 @@ public class TitleUIController : MonoBehaviour
         group.alpha = 0f;
         group.interactable = false;
         group.blocksRaycasts = false;
+    }
+
+    private void Start()
+    {
+        // 볼륨 설정 불러오기 및 리스너 등록
+        float vol = PlayerPrefs.GetFloat("MasterVolume", 1.0f);
+        AudioListener.volume = vol;
+        if (volumeSlider != null)
+        {
+            volumeSlider.value = vol;
+            volumeSlider.onValueChanged.RemoveAllListeners();
+            volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
+        }
+
+        // AI 모델 설정 불러오기 및 리스너 등록
+        int modelIdx = PlayerPrefs.GetInt("SelectedModelIndex", 0);
+        if (modelDropdown != null)
+        {
+            modelDropdown.value = modelIdx;
+            modelDropdown.onValueChanged.RemoveAllListeners();
+            modelDropdown.onValueChanged.AddListener(OnModelChanged);
+        }
+
+        // 초기 상태 가드
+        if (settingsPanelGroup != null) DisablePanel(settingsPanelGroup);
+        if (buttonPanelGroup != null) EnablePanel(buttonPanelGroup);
+    }
+
+    // ---------------- [설정 창 제어 함수] ----------------
+    public void OnClickOpenSettings()
+    {
+        if (buttonPanelGroup != null) DisablePanel(buttonPanelGroup);
+        if (settingsPanelGroup != null) EnablePanel(settingsPanelGroup);
+    }
+
+    public void OnClickCloseSettings()
+    {
+        if (settingsPanelGroup != null) DisablePanel(settingsPanelGroup);
+        if (buttonPanelGroup != null) EnablePanel(buttonPanelGroup);
+        SaveSettings();
+    }
+
+    private void OnVolumeChanged(float value)
+    {
+        AudioListener.volume = value;
+    }
+
+    private void OnModelChanged(int index)
+    {
+        if (LLMManager.Instance != null)
+        {
+            LLMManager.Instance.ChangeQualitySetting(index);
+        }
+    }
+
+    private void SaveSettings()
+    {
+        PlayerPrefs.SetFloat("MasterVolume", volumeSlider != null ? volumeSlider.value : 1.0f);
+        PlayerPrefs.SetInt("SelectedModelIndex", modelDropdown != null ? modelDropdown.value : 0);
+        PlayerPrefs.Save();
+        Debug.Log("[TitleUI] 설정 데이터 저장 완료!");
     }
 
     // ---------------- [버튼 클릭 이벤트] ----------------

@@ -15,7 +15,7 @@ public class LLMManager : MonoBehaviour
 
     [Header("모델 경로")]
     [Tooltip("StreamingAssets 폴더 기준 상대 경로를 입력하세요.")]
-    public string[] modelpaths = { "Models/gemma-3-4b-it-Q4_K_M.gguf", "Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf", "Models/gemma-3-12b-it-Q4_K_M.gguf" };
+    public string[] modelpaths = { "Models/gemma-3-4b-it-Q4_K_M.gguf", "Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf", "Models/gemma-3-12b-it-qat-int4-Q4_K_M.gguf" };
 
     [Header("AI 품질 설정 (유저 옵션)")]
     public int qualityIndex = 0;
@@ -61,6 +61,13 @@ public class LLMManager : MonoBehaviour
 
     private void Start()
     {
+        // PlayerPrefs에서 저장된 AI 품질 설정 로드
+        qualityIndex = PlayerPrefs.GetInt("SelectedModelIndex", 0);
+        if (qualityIndex < 0 || qualityIndex >= modelpaths.Length)
+        {
+            qualityIndex = 0;
+        }
+
         // 게임 초기화 시 백그라운드에서 모델 미리 로드 시작
         _ = LoadModelAsync();
     }
