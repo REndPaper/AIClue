@@ -123,7 +123,15 @@ public class AIDialogueHandler : MonoBehaviour
         try
         {
             // 조립된 프롬프트를 LLM에게 전송
-            string response = await LLMManager.Instance.GenerateResponseAsync(finalPrompt);
+            var customAntiPrompts = new List<string>
+            {
+                $"{_currentNPC.name}:",
+                $"[{_currentNPC.name}]",
+                "Player:",
+                "[Player]",
+                "System:"
+            };
+            string response = await LLMManager.Instance.GenerateResponseAsync(finalPrompt, customAntiPrompts);
 
             if (!string.IsNullOrEmpty(response))
             {

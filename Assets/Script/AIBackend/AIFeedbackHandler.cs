@@ -30,7 +30,13 @@ public class AIFeedbackHandler : MonoBehaviour
         sb.AppendLine($"- 심문 횟수: {chatCount}회");
         
         sb.AppendLine("\n[Student's Interrogation Log]");
-        sb.AppendLine(compressedChatLog);
+        // 리치 텍스트 컬러 태그 제거하여 AI 가독성 확보
+        string cleanedLog = string.Empty;
+        if (!string.IsNullOrEmpty(compressedChatLog))
+        {
+            cleanedLog = System.Text.RegularExpressions.Regex.Replace(compressedChatLog, "<.*?>", string.Empty);
+        }
+        sb.AppendLine(cleanedLog);
 
         // 3. 학점별 차등 지시사항
         sb.AppendLine("\n[Instruction]");
@@ -55,7 +61,7 @@ public class AIFeedbackHandler : MonoBehaviour
         // 두뇌(LLMManager)에게 최종 하청!
         try
         {
-            string feedback = await LLMManager.Instance.GenerateResponseAsync(sb.ToString());
+            string feedback = await LLMManager.Instance.GenerateResponseAsync(sb.ToString(), null, false);
             return string.IsNullOrEmpty(feedback) ? "자네의 보고서는 읽을 가치도 없군. (시스템 에러)" : feedback;
         }
         catch (System.Exception e)

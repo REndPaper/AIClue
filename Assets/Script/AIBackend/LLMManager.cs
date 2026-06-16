@@ -30,6 +30,8 @@ public class LLMManager : MonoBehaviour
     private StatelessExecutor _executor;
 
     private bool _isGenerating = false;
+    private int _loadedQualityIndex = -1;
+    private bool _isLoadingModel = false;
 
     private void Awake()
     {
@@ -125,6 +127,20 @@ public class LLMManager : MonoBehaviour
 
     public async Task LoadModelAsync()
     {
+        if (_isLoadingModel)
+        {
+            Debug.Log("[로컬 AI] 이미 모델이 로딩 중입니다. 이전 로딩을 대기하거나 생략합니다.");
+            return;
+        }
+
+        if (_weights != null && _loadedQualityIndex == qualityIndex)
+        {
+            Debug.Log($"[로컬 AI] {modelpaths[qualityIndex]} 모델이 이미 메모리에 로드되어 있습니다. 로딩을 생략합니다.");
+            return;
+        }
+
+        _isLoadingModel = true;
+
         string relativePath = modelpaths[qualityIndex];
         string absolutePath = System.IO.Path.Combine(Application.streamingAssetsPath, relativePath);
 
@@ -170,24 +186,44 @@ public class LLMManager : MonoBehaviour
 
             // UI 연동을 위한 이벤트 발생
             OnModelIndexChanged?.Invoke(0);
+
+            _loadedQualityIndex = 0;
         }
+        else
+        {
+            _loadedQualityIndex = qualityIndex;
+        }
+
+        _isLoadingModel = false;
     }
 
     /// <summary>
     /// NPC 심문 시 JSON 형태의 답변을 비동기로 생성합니다.
     /// </summary>
-    public async Task<string> GenerateResponseAsync(string prompt)
+    public async Task<string> GenerateResponseAsync(string prompt, List<string> customAntiPrompts = null, bool stopOnDoubleNewline = true)
     {
         if (_executor == null || _isGenerating) return null;
 
         _isGenerating = true;
         StringBuilder responseBuilder = new StringBuilder();
 
+        // 기본 안티프롬프트 목록 설정
+        var antiPrompts = new List<string> { "Player:", "[Player]", "System:", "Suspect:" };
+        if (customAntiPrompts != null)
+        {
+            foreach (var anti in customAntiPrompts)
+            {
+                if (!antiPrompts.Contains(anti))
+                {
+                    antiPrompts.Add(anti);
+                }
+            }
+        }
+
         var inferenceParams = new InferenceParams()
         {
             MaxTokens = 1024,
-            // 안티프롬프트는 그대로 유지 (엔진의 중단을 위함)
-            AntiPrompts = new List<string> { "Player:", "[Player]", "System:" },
+            AntiPrompts = antiPrompts,
             SamplingPipeline = new DefaultSamplingPipeline { Temperature = 0.8f, RepeatPenalty = 1.1f }
         };
 
@@ -199,32 +235,146 @@ public class LLMManager : MonoBehaviour
             {
                 responseBuilder.Append(text);
 
-                // [실시간 필터링 팁] 
-                // 만약 나중에 텍스트를 한 글자씩 실시간 UI로 보여주실 거라면
-                // 여기서 StringBuilder의 현재 내용을 체크해서 "Player:"가 포함되면 
-                // 루프를 break 하도록 짤 수도 있습니다.
+                // 실시간 중단 검사 (줄바꿈 두 번이나 코드 블록 기호 등 감지 시 즉시 중단하여 추론 시간 절약)
+                if (ShouldStopGeneration(responseBuilder.ToString(), customAntiPrompts, stopOnDoubleNewline))
+                {
+                    break;
+                }
             }
         }
         catch (Exception e)
         {
             Debug.LogError($"[로컬 AI] 추론 중 오류 발생: {e.Message}");
         }
+        finally
+        {
+            _isGenerating = false;
+        }
 
-        _isGenerating = false;
-
-        // [최종 후처리] 
-        // 안티프롬프트를 만나서 멈췄더라도, 결과물 끝에 "Player:"가 붙어있을 수 있으므로 싹둑 잘라냅니다.
         string finalResponse = responseBuilder.ToString();
 
-        foreach (var anti in inferenceParams.AntiPrompts)
+        // 최종 후처리 클리닝 적용
+        string npcName = "";
+        if (customAntiPrompts != null && customAntiPrompts.Count > 0)
         {
-            if (finalResponse.Contains(anti))
+            npcName = customAntiPrompts[0].Replace(":", "").Replace("[", "").Replace("]", "").Trim();
+        }
+
+        return CleanLLMResponse(finalResponse, npcName, stopOnDoubleNewline);
+    }
+
+    private bool ShouldStopGeneration(string text, List<string> antiPrompts, bool stopOnDoubleNewline)
+    {
+        if (string.IsNullOrEmpty(text)) return false;
+
+        // 앞부분 공백/줄바꿈을 제거한 실제 생성 콘텐츠가 존재할 때부터 중단 검사를 수행합니다.
+        string trimmedStart = text.TrimStart();
+        if (trimmedStart.Length == 0) return false;
+
+        // 1. 트리플 백틱 ``` 이 포함되어 있는지 확인
+        if (trimmedStart.Contains("```")) return true;
+
+        // 2. 트리플 쌍따옴표 """ 가 포함되어 있는지 확인
+        if (trimmedStart.Contains("\"\"\"")) return true;
+
+        // 3. 안티 프롬프트 중 하나라도 포함되어 있는지 확인
+        if (antiPrompts != null)
+        {
+            foreach (var anti in antiPrompts)
             {
-                finalResponse = finalResponse.Split(new[] { anti }, StringSplitOptions.None)[0];
+                if (text.Contains(anti))
+                {
+                    return true;
+                }
             }
         }
 
-        return finalResponse.Trim();
+        // 4. 본문 중간에 나타나는 더블 엔터 (\n\n) 검사 (대화형 모드 등 줄바꿈 단절 필요시에만 작동)
+        if (stopOnDoubleNewline)
+        {
+            int doubleNewlineIndex = trimmedStart.IndexOf("\n\n", StringComparison.Ordinal);
+            if (doubleNewlineIndex >= 0) return true;
+
+            int doubleNewlineRnIndex = trimmedStart.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+            if (doubleNewlineRnIndex >= 0) return true;
+        }
+
+        return false;
+    }
+
+    private string CleanLLMResponse(string text, string npcName, bool stopOnDoubleNewline)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        string cleanText = text.Trim();
+
+        // 1. 만약 전체 텍스트가 ``` 로 둘러싸여 있다면 제거 (예: ```대사```)
+        if (cleanText.StartsWith("```") && cleanText.EndsWith("```") && cleanText.Length > 6)
+        {
+            cleanText = cleanText.Substring(3, cleanText.Length - 6).Trim();
+        }
+        else if (cleanText.StartsWith("```"))
+        {
+            cleanText = cleanText.Substring(3).Trim();
+        }
+
+        // 2. 만약 전체 텍스트가 쌍따옴표(")나 따옴표로 감싸여 있다면 제거
+        if (cleanText.StartsWith("\"") && cleanText.EndsWith("\"") && cleanText.Length > 2)
+        {
+            cleanText = cleanText.Substring(1, cleanText.Length - 2).Trim();
+        }
+        else if (cleanText.StartsWith("'") && cleanText.EndsWith("'") && cleanText.Length > 2)
+        {
+            cleanText = cleanText.Substring(1, cleanText.Length - 2).Trim();
+        }
+
+        cleanText = cleanText.Trim();
+
+        // 3. 본문 내부의 원치 않는 반복 패턴 잘라내기
+        var stopPatterns = new List<string>();
+
+        // 대화 중단형 턴 패턴들은 대화 모드(stopOnDoubleNewline이 true)일 때만 작동하도록 격리하여
+        // 평가 피드백 같은 자유형 줄글이 본문 내 키워드 매칭(예: [시스템] 등)으로 통째로 잘려나가는 것을 방지합니다.
+        if (stopOnDoubleNewline)
+        {
+            stopPatterns.Add("Player:");
+            stopPatterns.Add("[Player]");
+            stopPatterns.Add("System:");
+            stopPatterns.Add("[System]");
+            stopPatterns.Add("Suspect:");
+            stopPatterns.Add("\n\n");
+            stopPatterns.Add("\r\n\r\n");
+        }
+
+        stopPatterns.Add("```");
+        stopPatterns.Add("\"\"\"");
+
+        if (!string.IsNullOrEmpty(npcName))
+        {
+            stopPatterns.Add($"{npcName}:");
+            stopPatterns.Add($"[{npcName}]");
+            stopPatterns.Add($"\n{npcName}");
+        }
+
+        int earliestIndex = cleanText.Length;
+        foreach (var pattern in stopPatterns)
+        {
+            int idx = cleanText.IndexOf(pattern, StringComparison.Ordinal);
+            if (idx >= 0 && idx < earliestIndex)
+            {
+                earliestIndex = idx;
+            }
+        }
+
+        if (earliestIndex < cleanText.Length)
+        {
+            cleanText = cleanText.Substring(0, earliestIndex).Trim();
+        }
+
+        // 마지막 정리
+        cleanText = cleanText.Trim(' ', '\n', '\r', '\t', '`', '"', '\'');
+
+        return cleanText;
     }
 
     /// <summary>
@@ -256,6 +406,7 @@ public class LLMManager : MonoBehaviour
         _context = null;
         _weights = null;
         _executor = null;
+        _loadedQualityIndex = -1;
     }
 
     private void OnDestroy()

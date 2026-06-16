@@ -131,18 +131,130 @@ public class AnswerSubmitController : MonoBehaviour
         // =========================================================
         // ★ 교수 AI에게 찐 평가 요청! (더미 데이터 삭제)
         // =========================================================
-        string professorComment = await aiFeedbackHandler.GenerateProfessorFeedback(
-            report.finalGrade,
-            report.isCulpritCorrect,
-            report.isWeaponCorrect,
-            _finalSearchCount,
-            _finalChatCount,
-            _finalChatLog // ★ 드디어 진짜 플레이어의 대화 로그가 들어갑니다!
-        );
+        string professorComment = "채점 시스템에 문제가 발생했네. 다음 기회에 피드백을 주도록 하지.";
+        
+        if (aiFeedbackHandler != null)
+        {
+            try
+            {
+                professorComment = await aiFeedbackHandler.GenerateProfessorFeedback(
+                    report.finalGrade,
+                    report.isCulpritCorrect,
+                    report.isWeaponCorrect,
+                    _finalSearchCount,
+                    _finalChatCount,
+                    _finalChatLog
+                );
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[AnswerSubmitController] 교수 AI 피드백 생성 중 예외 발생: {ex}");
+                professorComment = $"채점 시스템 오류 발생: {ex.Message}\n수사는 잘 마쳤으니 결과 리포트를 확인하게.";
+            }
+        }
+        else
+        {
+            Debug.LogError("[AnswerSubmitController] aiFeedbackHandler가 null입니다. 씬에 AIFeedbackHandler 오브젝트가 있는지 확인해 주세요.");
+            professorComment = "채점 교수님이 부재중이시군. 결과 리포트를 확인해보게.";
+        }
+
+        // 결과 데이터를 ScenarioManager 캐시에 저장
+        if (ScenarioManager.Instance != null)
+        {
+            ScenarioManager.Instance.latestResultData = new ResultData
+            {
+                report = report,
+                selectedSuspect = selectedSuspect,
+                selectedWeapon = selectedWeapon,
+                finalSearchCount = _finalSearchCount,
+                finalChatCount = _finalChatCount,
+                finalChatLog = _finalChatLog,
+                professorComment = professorComment
+            };
+
+            // 플레이 로그 파일 저장
+            SavePlayLogToFile(ScenarioManager.Instance.latestResultData);
+        }
 
         if (resultController != null)
         {
             resultController.UpdateProfessorFeedback(professorComment);
+        }
+    }
+
+    private void SavePlayLogToFile(ResultData data)
+    {
+        if (data == null) return;
+
+        try
+        {
+            // 1. persistentDataPath 폴더 내 저장
+            string directoryPath = System.IO.Path.Combine(Application.persistentDataPath, "PlayLogs");
+            if (!System.IO.Directory.Exists(directoryPath))
+            {
+                System.IO.Directory.CreateDirectory(directoryPath);
+            }
+
+            string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string fileName = $"PlayLog_{timestamp}.txt";
+            string filePath = System.IO.Path.Combine(directoryPath, fileName);
+
+            // 로그 내용 서식화
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.AppendLine("==================================================");
+            sb.AppendLine("                 GAME PLAY LOG                    ");
+            sb.AppendLine("==================================================");
+            sb.AppendLine($"[Timestamp]      {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            if (ScenarioManager.Instance != null && ScenarioManager.Instance.currentScenario != null)
+            {
+                sb.AppendLine($"[Scenario ID]    {ScenarioManager.Instance.currentScenario.caseNo}");
+                sb.AppendLine($"[Scenario Title] {ScenarioManager.Instance.currentScenario.caseName}");
+            }
+            sb.AppendLine($"[Selected Culprit] {data.selectedSuspect?.name} (ID: {data.selectedSuspect?.id}) - Correct: {data.report.isCulpritCorrect}");
+            sb.AppendLine($"[Selected Weapon]  {data.selectedWeapon?.name} (ID: {data.selectedWeapon?.id}) - Correct: {data.report.isWeaponCorrect}");
+            sb.AppendLine($"[Total Search]   {data.finalSearchCount}");
+            sb.AppendLine($"[Total Chat]     {data.finalChatCount}");
+            sb.AppendLine($"[Final Grade]    {data.report.finalGrade}");
+            sb.AppendLine($"[Total Score]    {data.report.totalScore}");
+            sb.AppendLine();
+            sb.AppendLine("==================================================");
+            sb.AppendLine("               PROFESSOR FEEDBACK                 ");
+            sb.AppendLine("==================================================");
+            sb.AppendLine(data.professorComment);
+            sb.AppendLine();
+            sb.AppendLine("==================================================");
+            sb.AppendLine("            INTERROGATION DIALOGUE LOG            ");
+            sb.AppendLine("==================================================");
+            if (!string.IsNullOrEmpty(data.finalChatLog))
+            {
+                // 리치 텍스트 태그를 제거하여 텍스트 파일 가독성을 높임
+                string cleanedLog = System.Text.RegularExpressions.Regex.Replace(data.finalChatLog, "<.*?>", string.Empty);
+                sb.AppendLine(cleanedLog);
+            }
+            else
+            {
+                sb.AppendLine("(No dialogue log recorded)");
+            }
+            sb.AppendLine("==================================================");
+
+            // 파일 쓰기
+            System.IO.File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
+            Debug.Log($"[AnswerSubmitController] 플레이 로그가 저장되었습니다: {filePath}");
+
+            // 2. 개발자 편의를 위해 유니티 프로젝트 폴더 내 복사본 저장
+            string projectLogDir = System.IO.Path.Combine(Application.dataPath, "..", "PlayLogs");
+            projectLogDir = System.IO.Path.GetFullPath(projectLogDir);
+            if (!System.IO.Directory.Exists(projectLogDir))
+            {
+                System.IO.Directory.CreateDirectory(projectLogDir);
+            }
+            string projectFilePath = System.IO.Path.Combine(projectLogDir, fileName);
+            System.IO.File.WriteAllText(projectFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+            Debug.Log($"[AnswerSubmitController] 프로젝트 폴더 내 플레이 로그 복사본이 저장되었습니다: {projectFilePath}");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[AnswerSubmitController] 플레이 로그 저장 실패: {ex.Message}");
         }
     }
 

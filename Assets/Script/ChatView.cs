@@ -72,7 +72,14 @@ public class ChatView : MonoBehaviour
         try
         {
             // 6. AI 응답 생성 대기
-            string response = await LLMManager.Instance.GenerateResponseAsync(finalPrompt);
+            var customAntiPrompts = new List<string>
+            {
+                "Suspect:",
+                "[Suspect]",
+                "Player:",
+                "[Player]"
+            };
+            string response = await LLMManager.Instance.GenerateResponseAsync(finalPrompt, customAntiPrompts);
 
             if (!string.IsNullOrEmpty(response))
             {
