@@ -134,7 +134,7 @@ public class TitleUIController : MonoBehaviour
 
         if (volumeSlider == null)
         {
-            GameObject sliderObj = GameObject.Find("MainMenuUI/SettingsPanel/VolumeSlider");
+            GameObject sliderObj = GameObject.Find("MainMenuUI/SettingsPanel/PanelContent/VolumeSlider");
             if (sliderObj != null)
             {
                 volumeSlider = sliderObj.GetComponent<Slider>();
@@ -143,7 +143,7 @@ public class TitleUIController : MonoBehaviour
 
         if (modelDropdown == null)
         {
-            GameObject ddObj = GameObject.Find("MainMenuUI/SettingsPanel/ModelDropdown");
+            GameObject ddObj = GameObject.Find("MainMenuUI/SettingsPanel/PanelContent/ModelDropdown");
             if (ddObj != null)
             {
                 modelDropdown = ddObj.GetComponent<TMP_Dropdown>();
@@ -162,7 +162,7 @@ public class TitleUIController : MonoBehaviour
             }
         }
 
-        GameObject closeBtnObj = GameObject.Find("MainMenuUI/SettingsPanel/CloseBtn");
+        GameObject closeBtnObj = GameObject.Find("MainMenuUI/SettingsPanel/PanelContent/CloseBtn");
         if (closeBtnObj != null)
         {
             Button closeBtn = closeBtnObj.GetComponent<Button>();
@@ -173,16 +173,7 @@ public class TitleUIController : MonoBehaviour
             }
         }
 
-        GameObject gameStartBtnObj = GameObject.Find("MainMenuUI/BtnPanel/GameStartBtn");
-        if (gameStartBtnObj != null)
-        {
-            Button gameStartBtn = gameStartBtnObj.GetComponent<Button>();
-            if (gameStartBtn != null)
-            {
-                gameStartBtn.onClick.RemoveAllListeners();
-                gameStartBtn.onClick.AddListener(OnClickStartGame);
-            }
-        }
+
 
         GameObject exitBtnObj = GameObject.Find("MainMenuUI/BtnPanel/ExitBtn");
         if (exitBtnObj != null)

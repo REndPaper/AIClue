@@ -49,6 +49,7 @@ public class CoreSystemManager : MonoBehaviour
     public async void ChangeState(GameState newState)
     {
         if (!_stateDictionary.ContainsKey(newState)) return;
+        if (_currentState != null && _currentState == _stateDictionary[newState]) return;
 
         IGameState oldState = _currentState;
         _currentState = _stateDictionary[newState];
