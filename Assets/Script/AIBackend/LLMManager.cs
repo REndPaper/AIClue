@@ -91,41 +91,67 @@ public class LLMManager : MonoBehaviour
     /// 설정된 품질(12B/4B)에 따라 모델을 VRAM에 로드합니다.
     /// 디스크에서 읽어오는 무거운 작업이므로 Task.Run으로 분리합니다.
     /// </summary>
+    private bool LoadModelInternal(string absolutePath)
+    {
+        try
+        {
+            var parameters = new ModelParams(absolutePath)
+            {
+                ContextSize = (uint)contextWindowSize,
+                // Vulkan 가속을 위해 레이어를 GPU로 전면 오프로딩
+                GpuLayerCount = 15
+            };
+
+            _weights = LLamaWeights.LoadFromFile(parameters);
+            _context = _weights.CreateContext(parameters);
+            _executor = new StatelessExecutor(_weights, parameters);
+
+            Debug.Log("[로컬 AI] 모델 로딩 완료! 심문 준비가 끝났습니다.");
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[로컬 AI] 모델 로드 실패: {e.Message}");
+            if (e.InnerException != null)
+            {
+                Debug.LogError($"[로컬 AI] 상세 예외: {e.InnerException.Message}");
+            }
+            return false;
+        }
+    }
+
     public async Task LoadModelAsync()
     {
-
         string relativePath = modelpaths[qualityIndex];
         string absolutePath = System.IO.Path.Combine(Application.streamingAssetsPath, relativePath);
 
         // [추가] 슬래시를 윈도우식(\)으로 통일하고, 깔끔한 절대 경로로 다림질
         absolutePath = System.IO.Path.GetFullPath(absolutePath.Replace("/", "\\"));
 
-        Debug.Log($"[로컬 AI] 모델 로딩 시작...");
+        Debug.Log($"[로컬 AI] 모델 로딩 시작... (Index: {qualityIndex}, Path: {relativePath})");
 
         // 기존에 로드된 모델이 있다면 VRAM 누수 방지를 위해 안전하게 메모리 해제
         DisposeAI();
 
         await Task.Run(() =>
         {
-            try
+            bool success = LoadModelInternal(absolutePath);
+            if (!success && qualityIndex != 0)
             {
-                var parameters = new ModelParams(absolutePath)
-                {
-                    ContextSize = (uint)contextWindowSize,
-                    // Vulkan 가속을 위해 레이어를 GPU로 전면 오프로딩
-                    GpuLayerCount = 15
-                };
+                Debug.LogWarning("[로컬 AI] 모델 로딩 실패로 인해 최하옵(Gemma 3 4B-it)으로 고정 후 재시도합니다.");
+                qualityIndex = 0;
+                PlayerPrefs.SetInt("SelectedModelIndex", 0);
+                PlayerPrefs.Save();
 
-                _weights = LLamaWeights.LoadFromFile(parameters);
-                _context = _weights.CreateContext(parameters);
-                _executor = new StatelessExecutor(_weights, parameters);
+                // 최하옵 경로 계산
+                string fallbackPath = System.IO.Path.Combine(Application.streamingAssetsPath, modelpaths[0]);
+                fallbackPath = System.IO.Path.GetFullPath(fallbackPath.Replace("/", "\\"));
 
-                Debug.Log("[로컬 AI] 모델 로딩 완료! 심문 준비가 끝났습니다.");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[로컬 AI] 모델 로드 중 치명적 오류 발생: {e.Message}, {e.InnerException}");
-                Debug.LogError($"{e.InnerException.Message} , {e.InnerException.StackTrace}");
+                // 불완전 리소스 재정리
+                DisposeAI();
+
+                // 최하옵으로 로드 재시도
+                LoadModelInternal(fallbackPath);
             }
         });
     }

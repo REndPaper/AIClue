@@ -100,7 +100,89 @@ public class TitleUIController : MonoBehaviour
 
     private void Start()
     {
-        // 볼륨 설정 불러오기 및 리스너 등록
+        // 1. 컴포넌트 자동 탐색 및 바인딩 (인스펙터 할당 누락 방지)
+        if (buttonPanelGroup == null)
+        {
+            GameObject btnPanelObj = GameObject.Find("MainMenuUI/BtnPanel");
+            if (btnPanelObj != null)
+            {
+                buttonPanelGroup = btnPanelObj.GetComponent<CanvasGroup>() ?? btnPanelObj.AddComponent<CanvasGroup>();
+            }
+        }
+
+        if (settingsPanelGroup == null)
+        {
+            GameObject settingsPanelObj = GameObject.Find("MainMenuUI/SettingsPanel");
+            if (settingsPanelObj != null)
+            {
+                settingsPanelGroup = settingsPanelObj.GetComponent<CanvasGroup>() ?? settingsPanelObj.AddComponent<CanvasGroup>();
+            }
+        }
+
+        if (volumeSlider == null)
+        {
+            GameObject sliderObj = GameObject.Find("MainMenuUI/SettingsPanel/VolumeSlider");
+            if (sliderObj != null)
+            {
+                volumeSlider = sliderObj.GetComponent<Slider>();
+            }
+        }
+
+        if (modelDropdown == null)
+        {
+            GameObject ddObj = GameObject.Find("MainMenuUI/SettingsPanel/ModelDropdown");
+            if (ddObj != null)
+            {
+                modelDropdown = ddObj.GetComponent<TMP_Dropdown>();
+            }
+        }
+
+        // 2. 버튼 클릭 리스너 동적 바인딩
+        GameObject menuSettingBtnObj = GameObject.Find("MainMenuUI/BtnPanel/SettingBtn");
+        if (menuSettingBtnObj != null)
+        {
+            Button menuSettingBtn = menuSettingBtnObj.GetComponent<Button>();
+            if (menuSettingBtn != null)
+            {
+                menuSettingBtn.onClick.RemoveAllListeners();
+                menuSettingBtn.onClick.AddListener(OnClickOpenSettings);
+            }
+        }
+
+        GameObject closeBtnObj = GameObject.Find("MainMenuUI/SettingsPanel/CloseBtn");
+        if (closeBtnObj != null)
+        {
+            Button closeBtn = closeBtnObj.GetComponent<Button>();
+            if (closeBtn != null)
+            {
+                closeBtn.onClick.RemoveAllListeners();
+                closeBtn.onClick.AddListener(OnClickCloseSettings);
+            }
+        }
+
+        GameObject gameStartBtnObj = GameObject.Find("MainMenuUI/BtnPanel/GameStartBtn");
+        if (gameStartBtnObj != null)
+        {
+            Button gameStartBtn = gameStartBtnObj.GetComponent<Button>();
+            if (gameStartBtn != null)
+            {
+                gameStartBtn.onClick.RemoveAllListeners();
+                gameStartBtn.onClick.AddListener(OnClickStartGame);
+            }
+        }
+
+        GameObject exitBtnObj = GameObject.Find("MainMenuUI/BtnPanel/ExitBtn");
+        if (exitBtnObj != null)
+        {
+            Button exitBtn = exitBtnObj.GetComponent<Button>();
+            if (exitBtn != null)
+            {
+                exitBtn.onClick.RemoveAllListeners();
+                exitBtn.onClick.AddListener(OnClickExitGame);
+            }
+        }
+
+        // 3. 볼륨 설정 불러오기 및 리스너 등록
         float vol = PlayerPrefs.GetFloat("MasterVolume", 1.0f);
         AudioListener.volume = vol;
         if (volumeSlider != null)
@@ -110,7 +192,7 @@ public class TitleUIController : MonoBehaviour
             volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
         }
 
-        // AI 모델 설정 불러오기 및 리스너 등록
+        // 4. AI 모델 설정 불러오기 및 리스너 등록
         int modelIdx = PlayerPrefs.GetInt("SelectedModelIndex", 0);
         if (modelDropdown != null)
         {
@@ -119,9 +201,15 @@ public class TitleUIController : MonoBehaviour
             modelDropdown.onValueChanged.AddListener(OnModelChanged);
         }
 
-        // 초기 상태 가드
+        // 5. 초기 상태 가드
         if (settingsPanelGroup != null) DisablePanel(settingsPanelGroup);
         if (buttonPanelGroup != null) EnablePanel(buttonPanelGroup);
+    }
+
+    public void OnClickExitGame()
+    {
+        Debug.Log("[TitleUI] 게임을 종료합니다.");
+        Application.Quit();
     }
 
     // ---------------- [설정 창 제어 함수] ----------------
