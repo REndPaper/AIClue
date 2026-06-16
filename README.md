@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Unity-6000.3.11f1-000000?logo=unity" alt="Unity 6"/>
   <img src="https://img.shields.io/badge/C%23-12.0-239120?logo=csharp" alt="C#"/>
   <img src="https://img.shields.io/badge/LLamaSharp-0.26.0-FF6600" alt="LLamaSharp"/>
-  <img src="https://img.shields.io/badge/Gemma--3-GGUF-4285F4?logo=google" alt="Gemma 3"/>
+  <img src="https://img.shields.io/badge/Exaone--3.5-7.8B--GGUF-4285F4" alt="Exaone 3.5"/>
   <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version"/>
 </p>
 
@@ -269,7 +269,11 @@ cd AIClue
 ```
 
 > [!IMPORTANT]
-> GGUF 모델 파일은 용량이 크므로(2.5~7.3GB) Git LFS를 통해 관리되거나 별도 다운로드하여 `Assets/StreamingAssets/Models/` 디렉토리에 배치해야 합니다.
+> GGUF 모델 파일은 용량이 크므로(2.5~7.3GB) 별도 다운로드하여 `Assets/StreamingAssets/Models/` 디렉토리에 배치해야 합니다.
+> [Gemma 3 4B](https://huggingface.co/unsloth/gemma-3-4b-it-qat-GGUF)
+> [Exaone 3.5 7.8B](https://huggingface.co/LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct-GGUF)
+> [Gemma 3 12B(int4)](https://huggingface.co/unsloth/gemma-3-12b-it-qat-int4-GGUF)
+> 모든 모델은 Q4_K_M 양자화 버전을 사용하였습니다.
 
 > [!TIP]
 > Vulkan을 지원하는 GPU가 있으면 `LLamaSharp.Backend.Vulkan`이 자동으로 GPU 가속을 활용합니다. CPU만으로도 실행 가능하지만 응답 속도가 현저히 느려질 수 있습니다.
@@ -333,26 +337,13 @@ CASE_001/
 
 | 날짜 | 마일스톤 |
 |---|---|
-| 2025-05-27 | 🎬 Unity 프로젝트 초기 생성 및 기본 환경 설정 |
-| 2025-06-01 | 🧠 LLamaSharp 도입 및 로컬 AI 추론 시스템(`LLMManager`) 구축 |
-| 2025-06-05 | 🎛️ 게임 핵심 상태 머신(FSM) 및 비동기 이벤트 프레임워크 구축, 타이틀 UI 구현 |
-| 2025-06-08 | 🔗 AI 아키텍처·상태 머신·판정 시스템 통합, 시나리오 데이터 구조 확립 |
-| 2025-06-11 | 🏠 메인 플레이 씬(심문실) 기초 환경 구성 |
-| 2025-06-14 | 💬 채팅창·단서 인벤토리·대화 기록 UI 구현 |
-| 2025-06-15 | ✅ 최종 추리 및 결과 시스템 완성, 교수 AI 피드백 연출, 역동적 결과 화면 애니메이션 |
+| 2025-04-01 | 🎬 Unity 프로젝트 초기 생성 및 기본 환경 설정 |
+| 2025-04-02 | 🧠 LLamaSharp 도입 및 로컬 AI 추론 시스템(`LLMManager`) 구축 |
+| 2025-05-06 | 🎛️ 게임 핵심 상태 머신(FSM) 및 비동기 이벤트 프레임워크 구축, 타이틀 UI 구현 |
+| 2025-05-10 | 🔗 AI 아키텍처·상태 머신·판정 시스템 통합, 시나리오 데이터 구조 확립 |
+| 2025-05-10 | 🏠 메인 플레이 씬(심문실) 기초 환경 구성 |
+| 2025-05-11 | 💬 채팅창·단서 인벤토리·대화 기록 UI 구현 |
+| 2025-05-12 | ✅ 최종 추리 및 결과 시스템 완성, 교수 AI 피드백 연출, 역동적 결과 화면 애니메이션 |
+| 2025-06-16 | ✅ 피드백 내용 반영(브리핑 추가 및 밸런싱 위한 로그 수집), 전체적인 UI 개선 |
 
 ---
-
-## 🤝 기여하기
-
-1. 이 저장소를 Fork합니다.
-2. 기능 브랜치를 생성합니다. (`git checkout -b feature/amazing-feature`)
-3. 변경사항을 커밋합니다. (`git commit -m 'feat: Add amazing feature'`)
-4. 브랜치에 Push합니다. (`git push origin feature/amazing-feature`)
-5. Pull Request를 생성합니다.
-
----
-
-<p align="center">
-  <sub>Built with ❤️ by <strong>REndPaper</strong></sub>
-</p>
